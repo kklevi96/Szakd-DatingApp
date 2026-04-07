@@ -19,7 +19,7 @@ namespace DatingApp.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
-            Database.EnsureCreated();
+            //Database.EnsureCreated();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -86,6 +86,10 @@ namespace DatingApp.Data
                 .WithMany(u => u.Messages)
                 .HasForeignKey(m => m.SenderUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Compatibility>()
+                .HasIndex(c => new { c.UserId_A, c.UserId_B })
+                .IsUnique();
 
             modelBuilder.Entity<Compatibility>()
                 .HasOne(c => c.UserA)

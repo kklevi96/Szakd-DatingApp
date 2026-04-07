@@ -68,6 +68,11 @@ namespace DatingApp
             });
 
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<ICompatibilityService, CompatibilityService>();
+            builder.Services.AddScoped<IMeetingService, MeetingService>();
+            builder.Services.AddScoped<IConversationService, ConversationService>();
+            builder.Services.AddScoped<IMessageService, MessageService>();
+            builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddControllers();
             builder.Services.AddSwaggerGen(options =>
             {
