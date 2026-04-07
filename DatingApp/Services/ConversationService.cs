@@ -53,7 +53,7 @@ namespace DatingApp.Services
             {
                 var existingConversation = await _context.Conversations
                     .Include(c => c.ConversationMembers)
-                        .ThenInclude(cm => cm.User)
+                    .ThenInclude(cm => cm.User)
                     .FirstAsync(c => c.Id == existingConversationId);
 
                 return MapConversation(existingConversation);
@@ -88,7 +88,7 @@ namespace DatingApp.Services
 
             var createdConversation = await _context.Conversations
                 .Include(c => c.ConversationMembers)
-                    .ThenInclude(cm => cm.User)
+                .ThenInclude(cm => cm.User)
                 .FirstAsync(c => c.Id == conversation.Id);
 
             return MapConversation(createdConversation);
