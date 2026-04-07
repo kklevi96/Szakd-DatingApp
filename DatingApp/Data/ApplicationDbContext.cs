@@ -19,6 +19,7 @@ namespace DatingApp.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+            Database.EnsureCreated();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,7 +39,7 @@ namespace DatingApp.Data
                 .HasOne(ma => ma.User)
                 .WithMany(u => u.MeetingAttendances)
                 .HasForeignKey(ma => ma.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Meeting>()
                 .HasOne(m => m.Location)
@@ -56,7 +57,7 @@ namespace DatingApp.Data
                 .HasOne(hu => hu.User)
                 .WithMany(u => u.HobbyUsers)
                 .HasForeignKey(hu => hu.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ConversationMember>()
                 .HasOne(cm => cm.Conversation)
@@ -68,7 +69,7 @@ namespace DatingApp.Data
                 .HasOne(cm => cm.User)
                 .WithMany(u => u.ConversationMembers)
                 .HasForeignKey(cm => cm.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ConversationMember>()
                 .HasIndex(cm => new { cm.ConversationId, cm.UserId })
@@ -111,6 +112,12 @@ namespace DatingApp.Data
                 if (entry.State == EntityState.Modified)
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
             }
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            SetDates();
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

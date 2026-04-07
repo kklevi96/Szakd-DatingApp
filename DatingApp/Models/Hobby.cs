@@ -6,7 +6,6 @@ namespace DatingApp.Models
     {
         public string Name { get; set; } = null!;
 
-        [NotMapped]
         public virtual ICollection<HobbyUser> HobbyUsers { get; set; }
     }
 }

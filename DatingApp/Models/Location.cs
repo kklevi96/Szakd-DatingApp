@@ -8,7 +8,6 @@ namespace DatingApp.Models
 
         public string Address { get; set; }
 
-        [NotMapped]
         public virtual ICollection<Meeting> Meetings { get; set; }
 
         public Location()
