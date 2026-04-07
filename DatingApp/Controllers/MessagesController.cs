@@ -1,108 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using DatingApp.Dtos.Messages;
+using DatingApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using DatingApp.Data;
-using DatingApp.Models;
 
 namespace DatingApp.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
     public class MessagesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IMessageService _messageService;
+        private readonly IUserService _userService;
 
-        public MessagesController(ApplicationDbContext context)
+        public MessagesController(IMessageService messageService, IUserService userService)
         {
-            _context = context;
+            _messageService = messageService;
+            _userService = userService;
         }
 
-        // GET: api/Messages
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Message>>> GetMessages()
+        [HttpPost]
+        public async Task<IActionResult> Send([FromBody] SendMessageRequest request)
         {
-            return await _context.Messages.ToListAsync();
-        }
-
-        // GET: api/Messages/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Message>> GetMessage(int id)
-        {
-            var message = await _context.Messages.FindAsync(id);
-
-            if (message == null)
-            {
-                return NotFound();
-            }
-
-            return message;
-        }
-
-        // PUT: api/Messages/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutMessage(int id, Message message)
-        {
-            if (id != message.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(message).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                var currentUserId = _userService.GetCurrentUserId(User);
+                var result = await _messageService.SendMessageAsync(currentUserId, request);
+                return Ok(result);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (UnauthorizedAccessException ex)
             {
-                if (!MessageExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return Unauthorized(ex.Message);
             }
-
-            return NoContent();
-        }
-
-        // POST: api/Messages
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Message>> PostMessage(Message message)
-        {
-            _context.Messages.Add(message);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetMessage", new { id = message.Id }, message);
-        }
-
-        // DELETE: api/Messages/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMessage(int id)
-        {
-            var message = await _context.Messages.FindAsync(id);
-            if (message == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                return BadRequest(ex.Message);
             }
-
-            _context.Messages.Remove(message);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
         }
 
-        private bool MessageExists(int id)
+        [HttpGet("conversation/{conversationId}")]
+        public async Task<IActionResult> GetByConversation(int conversationId)
         {
-            return _context.Messages.Any(e => e.Id == id);
+            try
+            {
+                var currentUserId = _userService.GetCurrentUserId(User);
+                var result = await _messageService.GetMessagesByConversationAsync(currentUserId, conversationId);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
     }
 }

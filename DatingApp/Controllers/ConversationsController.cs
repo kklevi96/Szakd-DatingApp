@@ -1,108 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using DatingApp.Dtos.Conversations;
+using DatingApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using DatingApp.Data;
-using DatingApp.Models;
 
 namespace DatingApp.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
     public class ConversationsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConversationService _conversationService;
+        private readonly IUserService _userService;
 
-        public ConversationsController(ApplicationDbContext context)
+        public ConversationsController(IConversationService conversationService, IUserService userService)
         {
-            _context = context;
+            _conversationService = conversationService;
+            _userService = userService;
         }
 
-        // GET: api/Conversations
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Conversation>>> GetConversations()
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateConversationRequest request)
         {
-            return await _context.Conversations.ToListAsync();
-        }
-
-        // GET: api/Conversations/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Conversation>> GetConversation(int id)
-        {
-            var conversation = await _context.Conversations.FindAsync(id);
-
-            if (conversation == null)
-            {
-                return NotFound();
-            }
-
-            return conversation;
-        }
-
-        // PUT: api/Conversations/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutConversation(int id, Conversation conversation)
-        {
-            if (id != conversation.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(conversation).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                var currentUserId = _userService.GetCurrentUserId(User);
+                var result = await _conversationService.CreateConversationAsync(currentUserId, request);
+                return Ok(result);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (UnauthorizedAccessException ex)
             {
-                if (!ConversationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return Unauthorized(ex.Message);
             }
-
-            return NoContent();
-        }
-
-        // POST: api/Conversations
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Conversation>> PostConversation(Conversation conversation)
-        {
-            _context.Conversations.Add(conversation);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetConversation", new { id = conversation.Id }, conversation);
-        }
-
-        // DELETE: api/Conversations/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteConversation(int id)
-        {
-            var conversation = await _context.Conversations.FindAsync(id);
-            if (conversation == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                return BadRequest(ex.Message);
             }
-
-            _context.Conversations.Remove(conversation);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
         }
 
-        private bool ConversationExists(int id)
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMy()
         {
-            return _context.Conversations.Any(e => e.Id == id);
+            try
+            {
+                var currentUserId = _userService.GetCurrentUserId(User);
+                var result = await _conversationService.GetMyConversationsAsync(currentUserId);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
     }
 }
