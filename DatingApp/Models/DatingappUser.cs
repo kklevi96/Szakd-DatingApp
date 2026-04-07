@@ -19,22 +19,16 @@ namespace DatingApp.Models
 
         public int MBTICode { get; set; }
 
-        [NotMapped]
         public virtual ICollection<MeetingAttendance> MeetingAttendances { get; set; }
 
-        [NotMapped]
         public virtual ICollection<HobbyUser> HobbyUsers { get; set; }
 
-        [NotMapped]
         public virtual ICollection<ConversationMember> ConversationMembers { get; set; }
 
-        [NotMapped]
         public virtual ICollection<Message> Messages { get; set; }
 
-        [NotMapped]
         public virtual ICollection<Compatibility> CompatibilitiesAsUserA { get; set; }
 
-        [NotMapped]
         public virtual ICollection<Compatibility> CompatibilitiesAsUserB { get; set; }
 
     }
