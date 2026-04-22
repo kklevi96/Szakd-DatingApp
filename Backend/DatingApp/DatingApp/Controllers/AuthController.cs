@@ -19,29 +19,24 @@ namespace DatingApp.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] AuthRegisterRequest request)
         {
-            try
-            {
-                var result = await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterAsync(request);
+
+            if (result != null)
                 return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return BadRequest();
+
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] AuthLoginRequest request)
         {
-            try
-            {
-                var result = await _authService.LoginAsync(request);
+            var result = await _authService.LoginAsync(request);
+
+            if (result != null)
                 return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+
+            return Unauthorized();
         }
 
         [Authorize]

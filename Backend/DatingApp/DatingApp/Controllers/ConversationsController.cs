@@ -22,35 +22,24 @@ namespace DatingApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateConversationRequest request)
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var result = await _conversationService.CreateConversationAsync(currentUserId, request);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _conversationService.CreateConversationAsync(currentUserId, request);
+            if (result != null)
                 return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return BadRequest();
         }
 
         [HttpGet("my")]
         public async Task<IActionResult> GetMy()
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var result = await _conversationService.GetMyConversationsAsync(currentUserId);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _conversationService.GetMyConversationsAsync(currentUserId);
+            if (result != null)
                 return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+
+            return BadRequest();
+
         }
     }
 }

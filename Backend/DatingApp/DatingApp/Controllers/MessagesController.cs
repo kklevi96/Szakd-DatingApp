@@ -22,35 +22,23 @@ namespace DatingApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Send([FromBody] SendMessageRequest request)
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var result = await _messageService.SendMessageAsync(currentUserId, request);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _messageService.SendMessageAsync(currentUserId, request);
+            if (result != null)
                 return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return BadRequest();
         }
 
         [HttpGet("conversation/{conversationId}")]
         public async Task<IActionResult> GetByConversation(int conversationId)
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var result = await _messageService.GetMessagesByConversationAsync(currentUserId, conversationId);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _messageService.GetMessagesByConversationAsync(currentUserId, conversationId);
+            if (result != null)
                 return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+
+            return BadRequest();
         }
     }
 }

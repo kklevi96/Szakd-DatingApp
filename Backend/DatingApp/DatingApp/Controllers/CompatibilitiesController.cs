@@ -18,57 +18,41 @@ namespace DatingApp.Controllers
             _userService = userService;
         }
 
+        [Authorize]
         [HttpPost("check/{otherUserId}")]
         public async Task<IActionResult> CheckOrCreate(string otherUserId)
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var result = await _compatibilityService.CheckOrCreateCompatibilityAsync(currentUserId, otherUserId);
+            var currentUserId = _userService.GetCurrentUserId(User);
+
+            var result = await _compatibilityService
+                .CheckOrCreateCompatibilityAsync(currentUserId, otherUserId);
+
+            if (result != null)
                 return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return BadRequest();
         }
 
+        [Authorize]
         [HttpGet("my")]
         public async Task<IActionResult> GetMyCompatibilities()
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var result = await _compatibilityService.GetMyCompatibilitiesAsync(currentUserId);
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _compatibilityService.GetMyCompatibilitiesAsync(currentUserId);
+            return Ok(result);
         }
 
+        [Authorize]
         [HttpPost("generate-my")]
         public async Task<IActionResult> GenerateMy()
         {
-            try
-            {
-                var currentUserId = _userService.GetCurrentUserId(User);
-                var createdCount = await _compatibilityService.GenerateMyCompatibilitiesAsync(currentUserId);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var createdCount = await _compatibilityService.GenerateMyCompatibilitiesAsync(currentUserId);
+
+            if (createdCount >= 0)
                 return Ok(new { createdCount });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return BadRequest();
         }
     }
 }
