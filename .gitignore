@@ -361,3 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+
+# Default ignored files
+/Frontend/shelf/
+/Frontend/workspace.xml
+# Editor-based HTTP Client requests
+/Frontend/httpRequests/
