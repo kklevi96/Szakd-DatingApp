@@ -41,6 +41,10 @@ namespace DatingApp.Data
                 .HasForeignKey(ma => ma.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<MeetingAttendance>()
+                .HasIndex(ma => new { ma.MeetingId, ma.UserId })
+                .IsUnique();
+
             modelBuilder.Entity<Meeting>()
                 .HasOne(m => m.Location)
                 .WithMany(l => l.Meetings)

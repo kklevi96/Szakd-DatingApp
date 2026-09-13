@@ -308,9 +308,10 @@ namespace DatingApp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MeetingId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("MeetingId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("MeetingAttendances");
                 });
