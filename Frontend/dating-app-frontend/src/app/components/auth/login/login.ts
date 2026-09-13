@@ -4,10 +4,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-login-component',
+  selector: 'app-login',
   imports: [CommonModule, FormsModule],
-  templateUrl: './login-component.html',
-  styleUrl: './login-component.scss',
+  templateUrl: './login.component.html',
+  styleUrl: './login.component.scss',
 })
 
 export class LoginComponent {
