@@ -24,9 +24,6 @@ namespace DatingApp.Services
                 throw new Exception("You cannot create a conversation with yourself.");
             }
 
-            var currentUser = await _userService.GetByIdAsync(currentUserId);
-            var otherUser = await _userService.GetByIdAsync(request.OtherUserId);
-
             var compatible = await _context.Compatibilities.AnyAsync(c =>
                 (c.UserId_A == currentUserId && c.UserId_B == request.OtherUserId) ||
                 (c.UserId_A == request.OtherUserId && c.UserId_B == currentUserId));
