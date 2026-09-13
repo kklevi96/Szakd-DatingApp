@@ -21,10 +21,10 @@ namespace DatingApp.Controllers
         {
             var result = await _authService.RegisterAsync(request);
 
-            if (result != null)
+            if (result.Succeeded)
                 return Ok(result);
 
-            return BadRequest();
+            return BadRequest(result.Errors);
 
         }
 
