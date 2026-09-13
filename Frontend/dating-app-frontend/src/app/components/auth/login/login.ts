@@ -2,25 +2,23 @@ import { Component, inject } from '@angular/core';
 import { AuthService } from '../../../core/services/auth-service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule],
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.scss',
+  imports: [CommonModule, FormsModule, MatSnackBarModule],
+  templateUrl: './login.html',
+  styleUrl: './login.scss',
 })
-
-export class LoginComponent {
+export class Login {
   private authService = inject(AuthService);
+  private snackBar = inject(MatSnackBar);
 
   email = '';
   password = '';
-
-  errorMessage = '';
   isLoading = false;
 
   login(): void {
-    this.errorMessage = '';
     this.isLoading = true;
 
     this.authService.login({
@@ -33,7 +31,9 @@ export class LoginComponent {
       },
       error: () => {
         this.isLoading = false;
-        this.errorMessage = 'Sign in failed. Please check your email and password.';
+        this.snackBar.open('Login failed', 'Close', {
+          duration: 5000
+        });
       }
     });
   }

@@ -6,29 +6,34 @@
     </div>
 
     <form class="login-form" (ngSubmit)="login()">
-      <div class="form-group">
-        <label for="email">Email</label>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
         <input
-          id="email"
-          name="email"
+          matInput
           type="email"
+          name="email"
           [(ngModel)]="email"
           placeholder="name@example.com"
+          autocomplete="username"
           required
         />
-      </div>
+        <mat-icon matSuffix>mail</mat-icon>
+      </mat-form-field>
 
-      <div class="form-group">
-        <label for="password">Password</label>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
         <input
-          id="password"
-          name="password"
+          matInput
           type="password"
+          name="password"
           [(ngModel)]="password"
           placeholder="••••••••"
+          autocomplete="current-password"
           required
         />
-      </div>
+        <mat-icon matSuffix>lock</mat-icon>
+      </mat-form-field>
 
       @if (errorMessage) {
         <div class="error-box">
@@ -36,9 +41,16 @@
         </div>
       }
 
-      <button type="submit" [disabled]="isLoading">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="isLoading"
+        class="full-width login-button"
+      >
         {{ isLoading ? 'Signing in...' : 'Sign in' }}
       </button>
+
     </form>
   </div>
 </div>
