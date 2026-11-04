@@ -1,6 +1,6 @@
 ﻿using DatingApp.Data;
 using DatingApp.Dtos.Compatibilities;
-using DatingApp.Dtos.Users;
+using DatingApp.Mappers;
 using DatingApp.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -52,7 +52,7 @@ namespace DatingApp.Services
                     IsCompatible = true,
                     Reason = "Compatibility already exists.",
                     Compatibility = MapCompatibility(existingCompatibility),
-                    OtherUser = MapUser(otherUser)
+                    OtherUser = UserMapper.ToResponse(otherUser)
                 };
             }
 
@@ -62,7 +62,7 @@ namespace DatingApp.Services
                 {
                     IsCompatible = false,
                     Reason = "MBTI codes don't match.",
-                    OtherUser = MapUser(otherUser)
+                    OtherUser = UserMapper.ToResponse(otherUser)
                 };
             }
 
@@ -86,7 +86,7 @@ namespace DatingApp.Services
                 IsCompatible = true,
                 Reason = "Compatibility created.",
                 Compatibility = MapCompatibility(createdCompatibility),
-                OtherUser = MapUser(otherUser)
+                OtherUser = UserMapper.ToResponse(otherUser)
             };
         }
 
@@ -170,24 +170,8 @@ namespace DatingApp.Services
                 UserId_A = compatibility.UserId_A,
                 UserId_B = compatibility.UserId_B,
                 CreatedAt = compatibility.CreatedAt,
-                UserA = compatibility.UserA == null ? null : MapUser(compatibility.UserA),
-                UserB = compatibility.UserB == null ? null : MapUser(compatibility.UserB)
-            };
-        }
-
-        private static UserResponse MapUser(DatingappUser user)
-        {
-            return new UserResponse
-            {
-                Id = user.Id,
-                Email = user.Email ?? "",
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                BirthDay = user.BirthDay,
-                InterestedinWoman = user.InterestedinWoman,
-                InterestedinMan = user.InterestedinMan,
-                Gender = user.Gender,
-                MBTICode = user.MBTICode
+                UserA = compatibility.UserA == null ? null : UserMapper.ToResponse(compatibility.UserA),
+                UserB = compatibility.UserB == null ? null : UserMapper.ToResponse(compatibility.UserB)
             };
         }
     }

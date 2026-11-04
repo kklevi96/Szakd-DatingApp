@@ -1,6 +1,6 @@
 ﻿using DatingApp.Data;
 using DatingApp.Dtos.Conversations;
-using DatingApp.Dtos.Users;
+using DatingApp.Mappers;
 using DatingApp.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -115,23 +115,7 @@ namespace DatingApp.Services
                 Id = conversation.Id,
                 CreatedAt = conversation.CreatedAt,
                 MemberUserIds = conversation.ConversationMembers.Select(cm => cm.UserId).ToList(),
-                Members = conversation.ConversationMembers.Select(cm => MapUser(cm.User)).ToList()
-            };
-        }
-
-        private static UserResponse MapUser(DatingappUser user)
-        {
-            return new UserResponse
-            {
-                Id = user.Id,
-                Email = user.Email ?? "",
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                BirthDay = user.BirthDay,
-                InterestedinWoman = user.InterestedinWoman,
-                InterestedinMan = user.InterestedinMan,
-                Gender = user.Gender,
-                MBTICode = user.MBTICode
+                Members = conversation.ConversationMembers.Select(cm => UserMapper.ToResponse(cm.User)).ToList()
             };
         }
     }
