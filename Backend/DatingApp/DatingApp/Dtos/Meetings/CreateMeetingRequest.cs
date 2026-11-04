@@ -3,6 +3,6 @@
     public class CreateMeetingRequest
     {
         public int LocationId { get; set; }
-        public List<string> UserIds { get; set; } = new();
+        public DateTime MeetingDate { get; set; }
     }
 }

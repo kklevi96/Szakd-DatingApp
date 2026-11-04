@@ -1,108 +1,65 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using DatingApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using DatingApp.Data;
-using DatingApp.Models;
 
 namespace DatingApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class HobbiesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IHobbyService _hobbyService;
+        private readonly IUserService _userService;
 
-        public HobbiesController(ApplicationDbContext context)
+        public HobbiesController(IHobbyService hobbyService, IUserService userService)
         {
-            _context = context;
+            _hobbyService = hobbyService;
+            _userService = userService;
         }
 
-        // GET: api/Hobbies
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Hobby>>> GetHobbies()
+        public async Task<IActionResult> GetAll()
         {
-            return await _context.Hobbies.ToListAsync();
+            var hobbies = await _hobbyService.GetAllHobbiesAsync();
+            return Ok(hobbies);
         }
 
-        // GET: api/Hobbies/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Hobby>> GetHobby(int id)
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyHobbies()
         {
-            var hobby = await _context.Hobbies.FindAsync(id);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var hobbies = await _hobbyService.GetMyHobbiesAsync(currentUserId);
 
-            if (hobby == null)
+            return Ok(hobbies);
+        }
+
+        [HttpPut("{id:int}/add")]
+        public async Task<IActionResult> Add(int id)
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _hobbyService.AddHobbyAsync(currentUserId, id);
+
+            if (!result)
             {
                 return NotFound();
             }
 
-            return hobby;
+            return Ok();
         }
 
-        // PUT: api/Hobbies/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutHobby(int id, Hobby hobby)
+        [HttpDelete("{id:int}/remove")]
+        public async Task<IActionResult> Remove(int id)
         {
-            if (id != hobby.Id)
-            {
-                return BadRequest();
-            }
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _hobbyService.RemoveHobbyAsync(currentUserId, id);
 
-            _context.Entry(hobby).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!HobbyExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Hobbies
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Hobby>> PostHobby(Hobby hobby)
-        {
-            _context.Hobbies.Add(hobby);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetHobby", new { id = hobby.Id }, hobby);
-        }
-
-        // DELETE: api/Hobbies/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteHobby(int id)
-        {
-            var hobby = await _context.Hobbies.FindAsync(id);
-            if (hobby == null)
+            if (!result)
             {
                 return NotFound();
             }
 
-            _context.Hobbies.Remove(hobby);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool HobbyExists(int id)
-        {
-            return _context.Hobbies.Any(e => e.Id == id);
+            return Ok();
         }
     }
 }

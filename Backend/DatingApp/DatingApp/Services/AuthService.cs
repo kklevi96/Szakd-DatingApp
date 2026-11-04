@@ -64,7 +64,8 @@ public class AuthService : IAuthService
         {
             Token = new JwtSecurityTokenHandler().WriteToken(token),
             Expiration = expiration,
-            Id = user.Id
+            Id = user.Id,
+            Email = user.Email ?? string.Empty
         };
     }
 

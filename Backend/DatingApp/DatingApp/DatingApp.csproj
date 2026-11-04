@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <Folder Include="Data\Repository\" />
-    <Folder Include="Dtos\Hobbies\" />
   </ItemGroup>
 
 </Project>

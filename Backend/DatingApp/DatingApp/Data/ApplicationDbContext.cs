@@ -1,6 +1,7 @@
 ﻿using DatingApp.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace DatingApp.Data
 {
@@ -49,7 +50,7 @@ namespace DatingApp.Data
                 .HasOne(m => m.Location)
                 .WithMany(l => l.Meetings)
                 .HasForeignKey(m => m.LocationId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<HobbyUser>()
                 .HasOne(hu => hu.Hobby)
@@ -106,6 +107,50 @@ namespace DatingApp.Data
                 .WithMany(u => u.CompatibilitiesAsUserB)
                 .HasForeignKey(c => c.UserId_B)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            SeedLocations(modelBuilder);
+            SeedHobbies(modelBuilder);
+        }
+
+        private static void SeedLocations(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Location>().HasData(
+                new Location
+                {
+                    Id = 1,
+                    Name = "Deák Ferenc tér",
+                    Address = "1052 Budapest, Deák Ferenc tér",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Location
+                {
+                    Id = 2,
+                    Name = "Széll Kálmán tér",
+                    Address = "1024 Budapest, Széll Kálmán tér",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Location
+                {
+                    Id = 3,
+                    Name = "Fővám tér",
+                    Address = "1056 Budapest, Fővám tér",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Location
+                {
+                    Id = 4,
+                    Name = "Városliget",
+                    Address = "1146 Budapest, Városliget",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Location
+                {
+                    Id = 5,
+                    Name = "Kopaszi-gát",
+                    Address = "1117 Budapest, Kopaszi-gát",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                }
+            );
         }
 
         private void SetDates()
@@ -120,6 +165,132 @@ namespace DatingApp.Data
                 if (entry.State == EntityState.Modified)
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
             }
+        }
+
+        private static void SeedHobbies(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Hobby>().HasData(
+                new Hobby
+                {
+                    Id = 1,
+                    Name = "Traveling",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 2,
+                    Name = "Hiking",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 3,
+                    Name = "Cycling",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 4,
+                    Name = "Running",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 5,
+                    Name = "Fitness",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 6,
+                    Name = "Swimming",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 7,
+                    Name = "Cooking",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 8,
+                    Name = "Photography",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 9,
+                    Name = "Gaming",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 10,
+                    Name = "Movies",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 11,
+                    Name = "Music",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 12,
+                    Name = "Reading",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 13,
+                    Name = "Concerts",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 14,
+                    Name = "Board Games",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 15,
+                    Name = "Animals",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 16,
+                    Name = "Technology",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 17,
+                    Name = "Art",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 18,
+                    Name = "Dancing",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 19,
+                    Name = "Football",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Hobby
+                {
+                    Id = 20,
+                    Name = "Eating Out",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                }
+            );
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

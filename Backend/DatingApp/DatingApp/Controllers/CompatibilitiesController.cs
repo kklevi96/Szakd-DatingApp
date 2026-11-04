@@ -49,10 +49,8 @@ namespace DatingApp.Controllers
             var currentUserId = _userService.GetCurrentUserId(User);
             var createdCount = await _compatibilityService.GenerateMyCompatibilitiesAsync(currentUserId);
 
-            if (createdCount >= 0)
-                return Ok(new { createdCount });
+            return Ok(new { createdCount });
 
-            return BadRequest();
         }
     }
 }

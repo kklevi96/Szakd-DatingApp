@@ -74,6 +74,7 @@ namespace DatingApp
             builder.Services.AddScoped<IConversationService, ConversationService>();
             builder.Services.AddScoped<IMessageService, MessageService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IHobbyService, HobbyService>();
             builder.Services.AddControllers();
             builder.Services.AddSwaggerGen(options =>
             {
@@ -104,6 +105,11 @@ namespace DatingApp
             });
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

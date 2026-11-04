@@ -1,108 +1,121 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using DatingApp.Dtos.Meetings;
+using DatingApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using DatingApp.Data;
-using DatingApp.Models;
 
 namespace DatingApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MeetingsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IMeetingService _meetingService;
+        private readonly IUserService _userService;
 
-        public MeetingsController(ApplicationDbContext context)
+        public MeetingsController(IMeetingService meetingService, IUserService userService)
         {
-            _context = context;
+            _meetingService = meetingService;
+            _userService = userService;
         }
 
-        // GET: api/Meetings
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Meeting>>> GetMeetings()
+        public async Task<IActionResult> GetAll()
         {
-            return await _context.Meetings.ToListAsync();
+            var meetings = await _meetingService.GetAllMeetingsAsync();
+            return Ok(meetings);
         }
 
-        // GET: api/Meetings/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Meeting>> GetMeeting(int id)
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyMeetings()
         {
-            var meeting = await _context.Meetings.FindAsync(id);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var meetings = await _meetingService.GetMyMeetingsAsync(currentUserId);
+
+            return Ok(meetings);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var meeting = await _meetingService.GetMeetingByIdAsync(id);
 
             if (meeting == null)
             {
                 return NotFound();
             }
 
-            return meeting;
+            return Ok(meeting);
         }
 
-        // PUT: api/Meetings/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutMeeting(int id, Meeting meeting)
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateMeetingRequest request)
         {
-            if (id != meeting.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(meeting).State = EntityState.Modified;
+            var currentUserId = _userService.GetCurrentUserId(User);
 
             try
             {
-                await _context.SaveChangesAsync();
+                var meeting = await _meetingService.CreateMeetingAsync(currentUserId, request);
+
+                return Ok(meeting);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (KeyNotFoundException ex)
             {
-                if (!MeetingExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return NotFound(ex.Message);
             }
-
-            return NoContent();
         }
 
-        // POST: api/Meetings
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Meeting>> PostMeeting(Meeting meeting)
+        [HttpPut("{id:int}/join")]
+        public async Task<IActionResult> Join(int id)
         {
-            _context.Meetings.Add(meeting);
-            await _context.SaveChangesAsync();
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _meetingService.JoinMeetingAsync(id, currentUserId);
 
-            return CreatedAtAction("GetMeeting", new { id = meeting.Id }, meeting);
-        }
-
-        // DELETE: api/Meetings/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMeeting(int id)
-        {
-            var meeting = await _context.Meetings.FindAsync(id);
-            if (meeting == null)
+            if (!result)
             {
                 return NotFound();
             }
 
-            _context.Meetings.Remove(meeting);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok();
         }
 
-        private bool MeetingExists(int id)
+        [HttpDelete("{id:int}/leave")]
+        public async Task<IActionResult> Leave(int id)
         {
-            return _context.Meetings.Any(e => e.Id == id);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _meetingService.LeaveMeetingAsync(id, currentUserId);
+
+            if (!result)
+            {
+                return NotFound();
+            }
+
+            return Ok();
         }
+
+        /*
+         * admin user
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+
+            try
+            {
+                var result = await _meetingService.DeleteMeetingAsync(id, currentUserId);
+
+                if (!result)
+                {
+                    return NotFound();
+                }
+
+                return Ok();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+        }
+        */
     }
 }
