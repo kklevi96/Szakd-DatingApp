@@ -2,26 +2,29 @@
 using DatingApp.Mappers;
 using DatingApp.Models;
 
-public static class MeetingMapper
+namespace DatingApp.Mappers
 {
-    public static MeetingResponse ToResponse(Meeting meeting)
+    public static class MeetingMapper
     {
-        return new MeetingResponse
+        public static MeetingResponse ToResponse(Meeting meeting)
         {
-            Id = meeting.Id,
-            LocationId = meeting.LocationId,
-            LocationName = meeting.Location.Name,
-            LocationAddress = meeting.Location.Address,
-            MeetingDate = meeting.MeetingDate,
-            CreatedAt = meeting.CreatedAt,
+            return new MeetingResponse
+            {
+                Id = meeting.Id,
+                LocationId = meeting.LocationId,
+                LocationName = meeting.Location.Name,
+                LocationAddress = meeting.Location.Address,
+                MeetingDate = meeting.MeetingDate,
+                CreatedAt = meeting.CreatedAt,
 
-            UserIds = meeting.MeetingAttendances
-                .Select(ma => ma.UserId)
-                .ToList(),
+                UserIds = meeting.MeetingAttendances
+                    .Select(ma => ma.UserId)
+                    .ToList(),
 
-            Users = meeting.MeetingAttendances
-                .Select(ma => UserMapper.ToResponse(ma.User))
-                .ToList()
-        };
+                Users = meeting.MeetingAttendances
+                    .Select(ma => UserMapper.ToResponse(ma.User))
+                    .ToList()
+            };
+        }
     }
 }
