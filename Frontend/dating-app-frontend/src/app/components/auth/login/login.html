@@ -5,7 +5,11 @@
       <p>Sign in to your account</p>
     </div>
 
-    <form class="login-form" (ngSubmit)="login()">
+    <form
+      class="login-form"
+      #loginForm="ngForm"
+      (ngSubmit)="login(loginForm)"
+    >
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Email</mat-label>
@@ -14,11 +18,18 @@
           type="email"
           name="email"
           [(ngModel)]="email"
+          #emailField="ngModel"
           placeholder="name@example.com"
           autocomplete="username"
           required
+          email
         />
         <mat-icon matSuffix>mail</mat-icon>
+        @if (emailField.hasError('required')) {
+          <mat-error>It is mandatory to fill the e-mail address</mat-error>
+        } @else if (emailField.hasError('email')) {
+          <mat-error>Enter a valid e-mail address</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
@@ -39,7 +50,7 @@
         mat-raised-button
         color="primary"
         type="submit"
-        [disabled]="isLoading"
+        [disabled]="isLoading || loginForm.invalid"
         class="full-width login-button"
       >
         {{ isLoading ? 'Signing in...' : 'Sign in' }}

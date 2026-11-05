@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { AuthService } from '../../../core/services/auth-service';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -33,7 +33,11 @@ export class Login {
   password = '';
   isLoading = false;
 
-  login(): void {
+  login(form: NgForm): void {
+    if (form.invalid || this.isLoading) {
+      return;
+    }
+
     this.isLoading = true;
 
     this.authService.login({
