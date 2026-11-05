@@ -17,9 +17,7 @@ namespace DatingApp.Services
             _userService = userService;
         }
 
-        public async Task<ConversationResponse> CreateConversationAsync(
-    string currentUserId,
-    CreateConversationRequest request)
+        public async Task<ConversationResponse> CreateConversationAsync(string currentUserId, CreateConversationRequest request)
         {
             if (request.OtherUserIds == null ||
                 request.OtherUserIds.Count == 0 ||

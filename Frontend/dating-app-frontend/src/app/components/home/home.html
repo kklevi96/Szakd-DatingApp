@@ -1,0 +1,9 @@
+@if (user(); as currentUser) {
+  <h1>Szia, {{ currentUser.firstName }}!</h1>
+  <p>Bejelentkezve: {{ currentUser.email }}</p>
+  <button type="button" (click)="logout()">Kijelentkezés</button>
+} @else if (errorMessage()) {
+  <p>{{ errorMessage() }}</p>
+} @else {
+  <p>Adatok betöltése...</p>
+}
