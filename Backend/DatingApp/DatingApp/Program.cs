@@ -22,6 +22,17 @@ namespace DatingApp
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    policy =>
+                    {
+                        policy.WithHeaders("*");
+                        policy.WithOrigins("*");
+                        policy.WithMethods("*");
+                    });
+            });
+
             builder.Services.AddDefaultIdentity<DatingappUser>(
                 options =>
                 {
@@ -40,33 +51,22 @@ namespace DatingApp
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-                .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
+            }).AddJwtBearer(options =>
+            {
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = true;
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    ValidAudience = "http://www.security.org",
+                    ValidIssuer = "http://www.security.org",
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
-                        )
-                }
-                );
+                        Encoding.UTF8.GetBytes("nagyonhosszutitkoskodhelye123457890123457890"))
+                };
+            });
 
             builder.Services.AddAuthorization();
-
-            builder.Services.AddCors(options =>
-            {
-                options.AddDefaultPolicy(
-                    policy =>
-                    {
-                        policy.WithHeaders("*");
-                        policy.WithOrigins("*");
-                        policy.WithMethods("*");
-                    });
-            });
 
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ICompatibilityService, CompatibilityService>();

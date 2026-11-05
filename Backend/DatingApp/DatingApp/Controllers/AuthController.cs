@@ -33,10 +33,10 @@ namespace DatingApp.Controllers
         {
             var result = await _authService.LoginAsync(request);
 
-            if (result != null)
-                return Ok(result);
+            if (result == null)
+                return Unauthorized();
 
-            return Unauthorized();
+            return Ok(result);
         }
 
         [Authorize]
@@ -49,6 +49,30 @@ namespace DatingApp.Controllers
                 return Unauthorized();
 
             return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPatch("DelegateAdmin")]
+        public async Task<IActionResult> DelegateAdmin([FromBody] DelegateAdminRequest request)
+        {
+            var result = await _authService.DelegateAdminAsync(User, request);
+            if (result == null)
+                return Unauthorized();
+
+            if (!result.Succeeded)
+                return BadRequest(new
+                {
+                    message = string.Join(" ", result.Errors.Select(error => error.Description))
+                });
+
+            return Ok(new { message = "Admin role granted. Please sign in again." });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("Admin")]
+        public IActionResult Admin()
+        {
+            return Ok(new { message = "Admin access confirmed by the backend." });
         }
     }
 }

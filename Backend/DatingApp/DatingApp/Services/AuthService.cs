@@ -1,5 +1,6 @@
-﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using DatingApp.Data;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using DatingApp.Dtos.Auth;
 using DatingApp.Models;
@@ -11,26 +12,24 @@ namespace DatingApp.Services;
 public class AuthService : IAuthService
 {
     private readonly UserManager<DatingappUser> _userManager;
-    private readonly IConfiguration _configuration;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly DatingAppDbContext _context;
 
     public AuthService(
         UserManager<DatingappUser> userManager,
-        IConfiguration configuration)
+        RoleManager<IdentityRole> roleManager,
+        DatingAppDbContext context)
     {
         _userManager = userManager;
-        _configuration = configuration;
+        _roleManager = roleManager;
+        _context = context;
     }
 
-    public async Task<AuthResponse> LoginAsync(AuthLoginRequest request)
+    public async Task<AuthResponse?> LoginAsync(AuthLoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
 
-        if (user == null)
-            return null;
-
-        var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-
-        if (!passwordValid)
+        if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
             return null;
 
         var claims = new List<Claim>
@@ -46,18 +45,16 @@ public class AuthService : IAuthService
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)
+        var signinKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes("nagyonhosszutitkoskodhelye123457890123457890")
         );
-
         var expiration = DateTime.Now.AddMinutes(1440);
-
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: "http://www.security.org",
+            audience: "http://www.security.org",
             claims: claims,
             expires: expiration,
-            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+            signingCredentials: new SigningCredentials(signinKey, SecurityAlgorithms.HmacSha256)
         );
 
         return new AuthResponse
@@ -88,7 +85,18 @@ public class AuthService : IAuthService
             MBTICode = request.MBTICode
         };
 
-        return await _userManager.CreateAsync(user, request.Password);
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+            return result;
+
+        var roleResult = await _userManager.AddToRoleAsync(user, "User");
+        if (!roleResult.Succeeded)
+            return roleResult;
+
+        await transaction.CommitAsync();
+        return result;
     }
 
     public async Task<UserMeResponse?> GetCurrentUserAsync(ClaimsPrincipal principal)
@@ -108,7 +116,39 @@ public class AuthService : IAuthService
             InterestedinWoman = user.InterestedinWoman,
             InterestedinMan = user.InterestedinMan,
             Gender = user.Gender,
-            MBTICode = user.MBTICode
+            MBTICode = user.MBTICode,
+            Roles = (await _userManager.GetRolesAsync(user)).ToList(),
+            CanRequestAdmin = true
         };
+    }
+
+    public async Task<IdentityResult?> DelegateAdminAsync(
+        ClaimsPrincipal principal, DelegateAdminRequest request)
+    {
+        if (request.Password != "DatingAppAdmin2026!")
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "InvalidAdminPassword",
+                Description = "Incorrect admin password."
+            });
+        }
+
+        var user = await _userManager.GetUserAsync(principal);
+        if (user == null)
+            return null;
+
+        if (!await _roleManager.RoleExistsAsync("Admin"))
+        {
+            var role = new IdentityRole { Name = "Admin" };
+            var roleResult = await _roleManager.CreateAsync(role);
+            if (!roleResult.Succeeded)
+                return roleResult;
+        }
+
+        if (await _userManager.IsInRoleAsync(user, "Admin"))
+            return IdentityResult.Success;
+
+        return await _userManager.AddToRoleAsync(user, "Admin");
     }
 }

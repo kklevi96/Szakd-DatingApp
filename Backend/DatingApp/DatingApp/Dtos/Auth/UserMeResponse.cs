@@ -11,5 +11,7 @@
         public bool InterestedinMan { get; set; }
         public string Gender { get; set; } = null!;
         public int MBTICode { get; set; }
+        public List<string> Roles { get; set; } = new();
+        public bool CanRequestAdmin { get; set; }
     }
 }

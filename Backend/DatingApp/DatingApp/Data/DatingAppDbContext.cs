@@ -1,5 +1,6 @@
 ﻿using DatingApp.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
 
@@ -27,6 +28,11 @@ namespace DatingApp.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<IdentityRole>().HasData(
+                new { Id = "1", Name = "Admin", NormalizedName = "ADMIN" },
+                new { Id = "2", Name = "User", NormalizedName = "USER" }
+            );
 
             modelBuilder.Entity<HobbyUser>()
                 .HasKey(hu => new { hu.UserId, hu.HobbyId });
