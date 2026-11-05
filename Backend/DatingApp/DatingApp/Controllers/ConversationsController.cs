@@ -23,11 +23,22 @@ namespace DatingApp.Controllers
         public async Task<IActionResult> Create([FromBody] CreateConversationRequest request)
         {
             var currentUserId = _userService.GetCurrentUserId(User);
-            var result = await _conversationService.CreateConversationAsync(currentUserId, request);
-            if (result != null)
-                return Ok(result);
 
-            return BadRequest();
+            try
+            {
+                var result = await _conversationService
+                    .CreateConversationAsync(currentUserId, request);
+
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         [HttpGet("my")]

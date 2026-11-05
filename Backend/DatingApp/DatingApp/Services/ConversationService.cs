@@ -17,78 +17,121 @@ namespace DatingApp.Services
             _userService = userService;
         }
 
-        public async Task<ConversationResponse> CreateConversationAsync(string currentUserId, CreateConversationRequest request)
+        public async Task<ConversationResponse> CreateConversationAsync(
+    string currentUserId,
+    CreateConversationRequest request)
         {
-            if (currentUserId == request.OtherUserId)
+            if (request.OtherUserIds == null ||
+                request.OtherUserIds.Count == 0 ||
+                request.OtherUserIds.Any(string.IsNullOrWhiteSpace))
             {
-                throw new Exception("You cannot create a conversation with yourself.");
+                throw new ArgumentException("Please select valid users.");
             }
 
-            var compatible = await _context.Compatibilities.AnyAsync(c =>
-                (c.UserId_A == currentUserId && c.UserId_B == request.OtherUserId) ||
-                (c.UserId_A == request.OtherUserId && c.UserId_B == currentUserId));
+            var otherUserIds = request.OtherUserIds
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
 
-            if (!compatible)
+            if (otherUserIds.Contains(currentUserId))
             {
-                throw new Exception("You can only create a conversation with a compatible user.");
+                throw new ArgumentException(
+                    "Do not include yourself in the selected users.");
             }
 
-            var currentUserConversationIds = await _context.ConversationMembers
-                .Where(cm => cm.UserId == currentUserId)
-                .Select(cm => cm.ConversationId)
-                .ToListAsync();
-
-            var existingConversationId = await _context.ConversationMembers
-                .Where(cm => currentUserConversationIds.Contains(cm.ConversationId))
-                .GroupBy(cm => cm.ConversationId)
-                .Where(g => g.Count() == 2)
-                .Where(g => g.Any(x => x.UserId == currentUserId) && g.Any(x => x.UserId == request.OtherUserId))
-                .Select(g => g.Key)
-                .FirstOrDefaultAsync();
-
-            if (existingConversationId != 0)
+            if (!request.IsGroup && otherUserIds.Count != 1)
             {
+                throw new ArgumentException(
+                    "A direct conversation requires exactly one other user.");
+            }
+            else if (request.IsGroup && otherUserIds.Count < 2)
+            {
+                throw new ArgumentException(
+                    "A group conversation requires at least two other users.");
+            }
+
+            var existingUserCount = await _context.Users
+                .CountAsync(user => otherUserIds.Contains(user.Id));
+
+            if (existingUserCount != otherUserIds.Count)
+            {
+                throw new KeyNotFoundException(
+                    "One or more selected users could not be found.");
+            }
+
+            var conversationName = string.IsNullOrWhiteSpace(request.Name)
+                ? null
+                : request.Name.Trim();
+
+            if (request.IsGroup &&
+                conversationName != null &&
+                conversationName.Length > 100)
+            {
+                throw new ArgumentException(
+                    "The group name cannot exceed 100 characters.");
+            }
+
+            if (!request.IsGroup)
+            {
+                var otherUserId = otherUserIds[0];
+
+                var compatible = await _context.Compatibilities
+                    .AnyAsync(compatibility =>
+                        (compatibility.UserId_A == currentUserId &&
+                         compatibility.UserId_B == otherUserId) ||
+                        (compatibility.UserId_A == otherUserId &&
+                         compatibility.UserId_B == currentUserId));
+
+                if (!compatible)
+                {
+                    throw new ArgumentException(
+                        "You can only create a direct conversation with a compatible user.");
+                }
+
                 var existingConversation = await _context.Conversations
-                    .Include(c => c.ConversationMembers)
-                    .ThenInclude(cm => cm.User)
-                    .FirstAsync(c => c.Id == existingConversationId);
+                    .Include(conversation => conversation.ConversationMembers)
+                    .ThenInclude(member => member.User)
+                    .FirstOrDefaultAsync(conversation =>
+                        !conversation.IsGroup &&
+                        conversation.ConversationMembers.Count == 2 &&
+                        conversation.ConversationMembers.Any(member =>
+                            member.UserId == currentUserId) &&
+                        conversation.ConversationMembers.Any(member =>
+                            member.UserId == otherUserId));
 
-                return MapConversation(existingConversation);
+                if (existingConversation != null)
+                {
+                    return ConversationMapper.ToResponse(existingConversation);
+                }
             }
+
+            var memberUserIds = otherUserIds
+                .Append(currentUserId)
+                .ToList();
 
             var conversation = new Conversation
             {
-                CreatedAt = DateTime.UtcNow
+                IsGroup = request.IsGroup,
+                Name = request.IsGroup ? conversationName : null,
+                CreatedAt = DateTime.UtcNow,
+                ConversationMembers = memberUserIds
+                    .Select(userId => new ConversationMember
+                    {
+                        UserId = userId,
+                        CreatedAt = DateTime.UtcNow
+                    })
+                    .ToList()
             };
 
             _context.Conversations.Add(conversation);
             await _context.SaveChangesAsync();
 
-            var members = new List<ConversationMember>
-            {
-                new ConversationMember
-                {
-                    ConversationId = conversation.Id,
-                    UserId = currentUserId,
-                    CreatedAt = DateTime.UtcNow
-                },
-                new ConversationMember
-                {
-                    ConversationId = conversation.Id,
-                    UserId = request.OtherUserId,
-                    CreatedAt = DateTime.UtcNow
-                }
-            };
-
-            _context.ConversationMembers.AddRange(members);
-            await _context.SaveChangesAsync();
-
             var createdConversation = await _context.Conversations
-                .Include(c => c.ConversationMembers)
-                .ThenInclude(cm => cm.User)
-                .FirstAsync(c => c.Id == conversation.Id);
+                .Include(savedConversation => savedConversation.ConversationMembers)
+                .ThenInclude(member => member.User)
+                .FirstAsync(savedConversation =>
+                    savedConversation.Id == conversation.Id);
 
-            return MapConversation(createdConversation);
+            return ConversationMapper.ToResponse(createdConversation);
         }
 
         public async Task<List<ConversationResponse>> GetMyConversationsAsync(string currentUserId)
@@ -105,18 +148,7 @@ namespace DatingApp.Services
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
-            return conversations.Select(MapConversation).ToList();
-        }
-
-        private static ConversationResponse MapConversation(Conversation conversation)
-        {
-            return new ConversationResponse
-            {
-                Id = conversation.Id,
-                CreatedAt = conversation.CreatedAt,
-                MemberUserIds = conversation.ConversationMembers.Select(cm => cm.UserId).ToList(),
-                Members = conversation.ConversationMembers.Select(cm => UserMapper.ToResponse(cm.User)).ToList()
-            };
+            return conversations.Select(ConversationMapper.ToResponse).ToList();
         }
     }
 }

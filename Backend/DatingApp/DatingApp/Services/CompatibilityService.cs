@@ -51,7 +51,7 @@ namespace DatingApp.Services
                 {
                     IsCompatible = true,
                     Reason = "Compatibility already exists.",
-                    Compatibility = MapCompatibility(existingCompatibility),
+                    Compatibility = CompatibilityMapper.ToResponse(existingCompatibility),
                     OtherUser = UserMapper.ToResponse(otherUser)
                 };
             }
@@ -85,7 +85,7 @@ namespace DatingApp.Services
             {
                 IsCompatible = true,
                 Reason = "Compatibility created.",
-                Compatibility = MapCompatibility(createdCompatibility),
+                Compatibility = CompatibilityMapper.ToResponse(createdCompatibility),
                 OtherUser = UserMapper.ToResponse(otherUser)
             };
         }
@@ -99,7 +99,7 @@ namespace DatingApp.Services
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
-            return compatibilities.Select(MapCompatibility).ToList();
+            return compatibilities.Select(CompatibilityMapper.ToResponse).ToList();
         }
 
         public async Task<int> GenerateMyCompatibilitiesAsync(string currentUserId)
@@ -162,17 +162,6 @@ namespace DatingApp.Services
                 : (userId2, userId1);
         }
 
-        private static CompatibilityResponse MapCompatibility(Compatibility compatibility)
-        {
-            return new CompatibilityResponse
-            {
-                Id = compatibility.Id,
-                UserId_A = compatibility.UserId_A,
-                UserId_B = compatibility.UserId_B,
-                CreatedAt = compatibility.CreatedAt,
-                UserA = compatibility.UserA == null ? null : UserMapper.ToResponse(compatibility.UserA),
-                UserB = compatibility.UserB == null ? null : UserMapper.ToResponse(compatibility.UserB)
-            };
-        }
+
     }
 }

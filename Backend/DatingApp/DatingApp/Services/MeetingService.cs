@@ -78,7 +78,7 @@ namespace DatingApp.Services
                         invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            return meeting == null ? null : MapMeeting(meeting);
+            return meeting == null ? null : MeetingMapper.ToResponse(meeting);
         }
 
         public async Task<List<MeetingResponse>> GetMyMeetingsAsync(string currentUserId)
@@ -88,7 +88,7 @@ namespace DatingApp.Services
                 .OrderBy(m => m.MeetingDate)
                 .ToListAsync();
 
-            return meetings.Select(MapMeeting).ToList();
+            return meetings.Select(MeetingMapper.ToResponse).ToList();
         }
 
         public async Task<List<MeetingResponse>> GetMyInvitationsAsync(string currentUserId)
@@ -99,7 +99,7 @@ namespace DatingApp.Services
                 .OrderBy(meeting => meeting.MeetingDate)
                 .ToListAsync();
 
-            return meetings.Select(MapMeeting).ToList();
+            return meetings.Select(MeetingMapper.ToResponse).ToList();
         }
 
         public async Task<bool> JoinMeetingAsync(int meetingId, string currentUserId)
@@ -255,28 +255,7 @@ namespace DatingApp.Services
             var meeting = await MeetingQuery()
                 .FirstAsync(m => m.Id == meetingId);
 
-            return MapMeeting(meeting);
-        }
-
-        private static MeetingResponse MapMeeting(Meeting meeting)
-        {
-            return new MeetingResponse
-            {
-                Id = meeting.Id,
-                LocationId = meeting.LocationId,
-                LocationName = meeting.Location.Name,
-                LocationAddress = meeting.Location.Address,
-                MeetingDate = meeting.MeetingDate,
-                CreatedAt = meeting.CreatedAt,
-
-                UserIds = meeting.MeetingAttendances
-                    .Select(ma => ma.UserId)
-                    .ToList(),
-
-                Users = meeting.MeetingAttendances
-                    .Select(ma => UserMapper.ToResponse(ma.User))
-                    .ToList()
-            };
+            return MeetingMapper.ToResponse(meeting);
         }
     }
 }

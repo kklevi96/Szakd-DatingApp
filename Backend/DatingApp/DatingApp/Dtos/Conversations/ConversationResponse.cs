@@ -6,6 +6,8 @@ namespace DatingApp.Dtos.Conversations
     {
         public int Id { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsGroup { get; set; }
+        public string? Name { get; set; }
         public List<string> MemberUserIds { get; set; } = new();
         public List<UserResponse> Members { get; set; } = new();
     }
