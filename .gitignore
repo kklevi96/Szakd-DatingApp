@@ -373,3 +373,8 @@ FodyWeavers.xsd
 /Frontend/workspace.xml
 # Editor-based HTTP Client requests
 /Frontend/httpRequests/
+
+#Angular auto generated
+/Frontend/dating-app-frontend/.angular/
+/Frontend/dating-app-frontend/dist/
+/Frontend/dating-app-frontend/out-tsc/
