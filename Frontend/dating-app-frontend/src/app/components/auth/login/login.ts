@@ -3,16 +3,31 @@ import { AuthService } from '../../../core/services/auth-service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { Router } from '@angular/router';
+
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, MatSnackBarModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatSnackBarModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatButtonModule,
+  ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
 export class Login {
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
 
   email = '';
   password = '';
@@ -28,6 +43,13 @@ export class Login {
       next: (res: any) => {
         this.authService.saveToken(res.token);
         this.isLoading = false;
+
+        this.snackBar.open('Sikeres bejelentkezés!', 'Bezárás', {
+          duration: 3000
+        }
+
+        );
+        this.router.navigateByUrl('/home');
       },
       error: () => {
         this.isLoading = false;
