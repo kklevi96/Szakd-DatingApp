@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DatingApp.Data.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(DatingAppDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -475,6 +475,37 @@ namespace DatingApp.Data.Migrations
                     b.ToTable("MeetingAttendances");
                 });
 
+            modelBuilder.Entity("DatingApp.Models.MeetingInvitation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MeetingId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("MeetingId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("MeetingInvitations");
+                });
+
             modelBuilder.Entity("DatingApp.Models.Message", b =>
                 {
                     b.Property<int>("Id")
@@ -724,6 +755,25 @@ namespace DatingApp.Data.Migrations
 
                     b.HasOne("DatingApp.Models.DatingappUser", "User")
                         .WithMany("MeetingAttendances")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Meeting");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DatingApp.Models.MeetingInvitation", b =>
+                {
+                    b.HasOne("DatingApp.Models.Meeting", "Meeting")
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DatingApp.Models.DatingappUser", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

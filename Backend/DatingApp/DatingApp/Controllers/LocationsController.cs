@@ -10,9 +10,9 @@ namespace DatingApp.Controllers
     [Authorize]
     public class LocationsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly DatingAppDbContext _context;
 
-        public LocationsController(ApplicationDbContext context)
+        public LocationsController(DatingAppDbContext context)
         {
             _context = context;
         }

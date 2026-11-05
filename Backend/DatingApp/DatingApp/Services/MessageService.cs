@@ -8,10 +8,10 @@ namespace DatingApp.Services
 {
     public class MessageService : IMessageService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly DatingAppDbContext _context;
         private readonly IUserService _userService;
 
-        public MessageService(ApplicationDbContext context, IUserService userService)
+        public MessageService(DatingAppDbContext context, IUserService userService)
         {
             _context = context;
             _userService = userService;

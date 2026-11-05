@@ -19,13 +19,6 @@ namespace DatingApp.Controllers
             _userService = userService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var meetings = await _meetingService.GetAllMeetingsAsync();
-            return Ok(meetings);
-        }
-
         [HttpGet("my")]
         public async Task<IActionResult> GetMyMeetings()
         {
@@ -35,10 +28,20 @@ namespace DatingApp.Controllers
             return Ok(meetings);
         }
 
+        [HttpGet("invitations")]
+        public async Task<IActionResult> GetMyInvitations()
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var meetings = await _meetingService.GetMyInvitationsAsync(currentUserId);
+
+            return Ok(meetings);
+        }
+
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var meeting = await _meetingService.GetMeetingByIdAsync(id);
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var meeting = await _meetingService.GetMeetingByIdAsync(id, currentUserId);
 
             if (meeting == null)
             {
@@ -63,20 +66,35 @@ namespace DatingApp.Controllers
             {
                 return NotFound(ex.Message);
             }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+
 
         [HttpPut("{id:int}/join")]
         public async Task<IActionResult> Join(int id)
         {
             var currentUserId = _userService.GetCurrentUserId(User);
-            var result = await _meetingService.JoinMeetingAsync(id, currentUserId);
 
-            if (!result)
+            try
             {
-                return NotFound();
-            }
+                var result = await _meetingService.JoinMeetingAsync(id, currentUserId);
 
-            return Ok();
+                if (!result)
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    return Ok();
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpDelete("{id:int}/leave")]

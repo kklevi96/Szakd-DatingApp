@@ -18,7 +18,7 @@ namespace DatingApp
 
             // Add services to the container.
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            builder.Services.AddDbContext<DatingAppDbContext>(options =>
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -32,7 +32,7 @@ namespace DatingApp
                     options.Password.RequireNonAlphanumeric = false;
                 })
                 .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddEntityFrameworkStores<DatingAppDbContext>()
                 .AddDefaultTokenProviders();
 
             builder.Services.AddAuthentication(options =>
@@ -108,7 +108,7 @@ namespace DatingApp
 
             using (var scope = app.Services.CreateScope())
             {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var context = scope.ServiceProvider.GetRequiredService<DatingAppDbContext>();
             }
 
             // Configure the HTTP request pipeline.

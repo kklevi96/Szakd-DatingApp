@@ -15,10 +15,10 @@ namespace DatingApp.Services
 
         //vagy algoritmikus megoldás, vagy akár egymást is erősíthetik/validálhatják
 
-        private readonly ApplicationDbContext _context;
+        private readonly DatingAppDbContext _context;
         private readonly IUserService _userService;
 
-        public CompatibilityService(ApplicationDbContext context, IUserService userService)
+        public CompatibilityService(DatingAppDbContext context, IUserService userService)
         {
             _context = context;
             _userService = userService;

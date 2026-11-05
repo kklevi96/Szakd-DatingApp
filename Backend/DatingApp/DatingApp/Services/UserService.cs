@@ -9,9 +9,9 @@ namespace DatingApp.Services
     public class UserService : IUserService
     {
         private readonly UserManager<DatingappUser> _userManager;
-        private readonly ApplicationDbContext _context;
+        private readonly DatingAppDbContext _context;
 
-        public UserService(UserManager<DatingappUser> userManager, ApplicationDbContext context)
+        public UserService(UserManager<DatingappUser> userManager, DatingAppDbContext context)
         {
             _userManager = userManager;
             _context = context;

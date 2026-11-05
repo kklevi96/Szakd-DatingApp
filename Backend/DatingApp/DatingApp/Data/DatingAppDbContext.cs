@@ -5,7 +5,7 @@ using System.Reflection.Emit;
 
 namespace DatingApp.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<DatingappUser>
+    public class DatingAppDbContext : IdentityDbContext<DatingappUser>
     {
         public DbSet<Compatibility> Compatibilities { get; set; }
         public DbSet<Conversation> Conversations { get; set; }
@@ -15,9 +15,10 @@ namespace DatingApp.Data
         public DbSet<Location> Locations { get; set; }
         public DbSet<Meeting> Meetings { get; set; }
         public DbSet<MeetingAttendance> MeetingAttendances { get; set; }
+        public DbSet<MeetingInvitation> MeetingInvitations { get; set; }
         public DbSet<Message> Messages { get; set; }
 
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        public DatingAppDbContext(DbContextOptions<DatingAppDbContext> options)
             : base(options)
         {
             //Database.EnsureCreated();
@@ -45,6 +46,26 @@ namespace DatingApp.Data
             modelBuilder.Entity<MeetingAttendance>()
                 .HasIndex(ma => new { ma.MeetingId, ma.UserId })
                 .IsUnique();
+
+            modelBuilder.Entity<MeetingInvitation>()
+                .HasIndex(invitation => new
+                {
+                    invitation.MeetingId,
+                    invitation.UserId
+                })
+                .IsUnique();
+
+            modelBuilder.Entity<MeetingInvitation>()
+                .HasOne(invitation => invitation.Meeting)
+                .WithMany()
+                .HasForeignKey(invitation => invitation.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MeetingInvitation>()
+                .HasOne(invitation => invitation.User)
+                .WithMany()
+                .HasForeignKey(invitation => invitation.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Meeting>()
                 .HasOne(m => m.Location)

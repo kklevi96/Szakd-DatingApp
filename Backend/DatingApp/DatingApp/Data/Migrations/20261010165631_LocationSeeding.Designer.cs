@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DatingApp.Data.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(DatingAppDbContext))]
     [Migration("20261010165631_LocationSeeding")]
     partial class LocationSeeding
     {

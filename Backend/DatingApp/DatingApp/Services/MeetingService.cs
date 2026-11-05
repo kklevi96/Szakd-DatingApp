@@ -8,15 +8,33 @@ namespace DatingApp.Services
 {
     public class MeetingService : IMeetingService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly DatingAppDbContext _context;
 
-        public MeetingService(ApplicationDbContext context)
+        public MeetingService(DatingAppDbContext context)
         {
             _context = context;
         }
 
         public async Task<MeetingResponse> CreateMeetingAsync(string currentUserId, CreateMeetingRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.OtherUserId))
+            {
+                throw new ArgumentException("An invited user is required.");
+            }
+
+            if (currentUserId == request.OtherUserId)
+            {
+                throw new ArgumentException("You cannot invite yourself.");
+            }
+
+            var invitedUserExists = await _context.Users
+                .AnyAsync(user => user.Id == request.OtherUserId);
+
+            if (!invitedUserExists)
+            {
+                throw new KeyNotFoundException("Invited user not found.");
+            }
+
             var locationExists = await _context.Locations
                 .AnyAsync(l => l.Id == request.LocationId);
 
@@ -39,23 +57,25 @@ namespace DatingApp.Services
             };
 
             _context.Meetings.Add(meeting);
+
+            _context.MeetingInvitations.Add(new MeetingInvitation
+            {
+                Meeting = meeting,
+                UserId = request.OtherUserId
+            });
+
             await _context.SaveChangesAsync();
 
             return await GetMeetingResponseAsync(meeting.Id);
         }
 
-        public async Task<List<MeetingResponse>> GetAllMeetingsAsync()
-        {
-            var meetings = await MeetingQuery()
-                .OrderBy(m => m.MeetingDate)
-                .ToListAsync();
-
-            return meetings.Select(MapMeeting).ToList();
-        }
-
-        public async Task<MeetingResponse?> GetMeetingByIdAsync(int id)
+        public async Task<MeetingResponse?> GetMeetingByIdAsync(int id, string currentUserId)
         {
             var meeting = await MeetingQuery()
+                .Where(meeting =>
+                    meeting.MeetingAttendances.Any(attendance => attendance.UserId == currentUserId) ||
+                    _context.MeetingInvitations.Any(invitation =>
+                        invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             return meeting == null ? null : MapMeeting(meeting);
@@ -71,28 +91,95 @@ namespace DatingApp.Services
             return meetings.Select(MapMeeting).ToList();
         }
 
+        public async Task<List<MeetingResponse>> GetMyInvitationsAsync(string currentUserId)
+        {
+            var meetings = await MeetingQuery()
+                .Where(meeting => _context.MeetingInvitations.Any(invitation =>
+                    invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
+                .OrderBy(meeting => meeting.MeetingDate)
+                .ToListAsync();
+
+            return meetings.Select(MapMeeting).ToList();
+        }
+
         public async Task<bool> JoinMeetingAsync(int meetingId, string currentUserId)
         {
-            var meeting = await _context.Meetings
-                .Include(m => m.MeetingAttendances)
-                .FirstOrDefaultAsync(m => m.Id == meetingId);
+            var meetingExists = await _context.Meetings
+                .AnyAsync(meeting => meeting.Id == meetingId);
 
-            if (meeting == null)
+            if (!meetingExists)
             {
                 return false;
             }
 
-            if (meeting.MeetingAttendances.Any(ma => ma.UserId == currentUserId))
+            var alreadyJoined = await _context.MeetingAttendances
+                .AnyAsync(attendance =>
+                    attendance.MeetingId == meetingId &&
+                    attendance.UserId == currentUserId);
+
+            if (alreadyJoined)
             {
                 return true;
             }
 
-            meeting.MeetingAttendances.Add(new MeetingAttendance
-            {
-                UserId = currentUserId
-            });
+            var invitation = await _context.MeetingInvitations
+                .SingleOrDefaultAsync(invitation =>
+                    invitation.MeetingId == meetingId &&
+                    invitation.UserId == currentUserId);
 
-            await _context.SaveChangesAsync();
+            if (invitation == null)
+            {
+                var joinedMeanwhile = await _context.MeetingAttendances
+                    .AnyAsync(attendance =>
+                        attendance.MeetingId == meetingId && attendance.UserId == currentUserId);
+
+                if (joinedMeanwhile)
+                {
+                    return true;
+                }
+
+                throw new UnauthorizedAccessException(
+                    "You are not invited to this meeting.");
+            }
+
+            var newAttendance = new MeetingAttendance
+            {
+                MeetingId = meetingId,
+                UserId = currentUserId
+            };
+
+            _context.MeetingAttendances.Add(newAttendance);
+            _context.MeetingInvitations.Remove(invitation);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                _context.Entry(newAttendance).State = EntityState.Detached;
+                _context.Entry(invitation).State = EntityState.Detached;
+
+                var joinedMeanwhile = await _context.MeetingAttendances
+                    .AnyAsync(existingAttendance =>
+                        existingAttendance.MeetingId == meetingId &&
+                        existingAttendance.UserId == currentUserId);
+
+                if (joinedMeanwhile)
+                {
+                    return true;
+                }
+
+                var meetingStillExists = await _context.Meetings
+                    .AnyAsync(meeting => meeting.Id == meetingId);
+
+                if (!meetingStillExists)
+                {
+                    return false;
+                }
+
+                throw;
+            }
 
             return true;
         }

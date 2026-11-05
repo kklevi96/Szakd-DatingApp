@@ -7,9 +7,9 @@ namespace DatingApp.Services
 {
     public class HobbyService : IHobbyService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly DatingAppDbContext _context;
 
-        public HobbyService(ApplicationDbContext context)
+        public HobbyService(DatingAppDbContext context)
         {
             _context = context;
         }

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DatingApp.Data.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(DatingAppDbContext))]
     [Migration("20260913150711_AddUniqueMeetingAttendance")]
     partial class AddUniqueMeetingAttendance
     {
