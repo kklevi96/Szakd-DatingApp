@@ -1,9 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import {
-  AuthService,
-  UserMeResponse
-} from '../../core/services/auth-service';
-import { Router } from '@angular/router';
+import { AuthService, UserMeResponse } from '../../core/services/auth-service';
 
 @Component({
   selector: 'app-home',
@@ -13,7 +9,6 @@ import { Router } from '@angular/router';
 })
 export class Home implements OnInit {
   private authService = inject(AuthService);
-  private router = inject(Router);
 
   user = signal<UserMeResponse | null>(null);
   errorMessage = signal('');
@@ -24,13 +19,8 @@ export class Home implements OnInit {
         this.user.set(user);
       },
       error: () => {
-        this.errorMessage.set('Nem sikerült lekérni a felhasználó adatait.');
+        this.errorMessage.set('Error while requesting user data');
       }
     });
-  }
-
-  logout(): void {
-    this.authService.logout();
-    void this.router.navigateByUrl('/login');
   }
 }

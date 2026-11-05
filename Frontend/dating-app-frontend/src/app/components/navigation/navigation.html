@@ -1,0 +1,33 @@
+<mat-toolbar>
+  <nav aria-label="Main navigation">
+    @if (auth.isLoggedIn()) {
+      <a
+        mat-icon-button
+        routerLink="/home"
+        aria-label="Home"
+        title="Home"
+      >
+        <mat-icon>home</mat-icon>
+      </a>
+    }
+
+    <span class="example-spacer"></span>
+
+    @if (auth.isLoggedIn()) {
+      <a mat-button routerLink="/logout">
+        <mat-icon>logout</mat-icon>
+        Logout
+      </a>
+    } @else {
+      <a mat-button routerLink="/login">
+        <mat-icon>login</mat-icon>
+        Login
+      </a>
+
+      <a mat-button routerLink="/register">
+        <mat-icon>person_add</mat-icon>
+        Register
+      </a>
+    }
+  </nav>
+</mat-toolbar>

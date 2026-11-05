@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { AuthService } from '../../../core/services/auth-service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -8,7 +8,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Router } from '@angular/router';
-
 
 @Component({
   selector: 'app-login',
@@ -25,42 +24,44 @@ import { Router } from '@angular/router';
   styleUrl: './login.scss',
 })
 export class Login {
-  private authService = inject(AuthService);
-  private snackBar = inject(MatSnackBar);
-  private router = inject(Router);
+  constructor(
+    private authService: AuthService,
+    private snackBar: MatSnackBar,
+    private router: Router
+  ) {}
 
   email = '';
   password = '';
   isLoading = false;
 
-  login(form: NgForm): void {
+  public sendLoginCredentials(form: NgForm): void {
     if (form.invalid || this.isLoading) {
       return;
     }
 
     this.isLoading = true;
 
-    this.authService.login({
-      email: this.email,
-      password: this.password
-    }).subscribe({
-      next: (res: any) => {
-        this.authService.saveToken(res.token);
-        this.isLoading = false;
+    this.authService
+      .login({
+        email: this.email,
+        password: this.password,
+      })
+      .subscribe({
+        next: (res: any) => {
+          this.authService.saveToken(res.token);
+          this.isLoading = false;
 
-        this.snackBar.open('Sikeres bejelentkezés!', 'Bezárás', {
-          duration: 3000
-        }
-
-        );
-        this.router.navigateByUrl('/home');
-      },
-      error: () => {
-        this.isLoading = false;
-        this.snackBar.open('Login failed', 'Close', {
-          duration: 5000
-        });
-      }
-    });
+          this.snackBar.open('Sikeres bejelentkezés!', 'Bezárás', {
+            duration: 3000,
+          });
+          this.router.navigateByUrl('/home');
+        },
+        error: () => {
+          this.isLoading = false;
+          this.snackBar.open('Login failed', 'Close', {
+            duration: 5000,
+          });
+        },
+      });
   }
 }

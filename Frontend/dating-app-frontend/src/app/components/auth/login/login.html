@@ -8,7 +8,7 @@
     <form
       class="login-form"
       #loginForm="ngForm"
-      (ngSubmit)="login(loginForm)"
+      (ngSubmit)="sendLoginCredentials(loginForm)"
     >
 
       <mat-form-field appearance="outline" class="full-width">
@@ -48,14 +48,12 @@
 
       <button
         mat-raised-button
-        color="primary"
         type="submit"
+        class="big-button"
         [disabled]="isLoading || loginForm.invalid"
-        class="full-width login-button"
       >
         {{ isLoading ? 'Signing in...' : 'Sign in' }}
       </button>
-
     </form>
   </div>
 </div>
