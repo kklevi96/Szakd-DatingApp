@@ -151,4 +151,16 @@ public class AuthService : IAuthService
 
         return await _userManager.AddToRoleAsync(user, "Admin");
     }
+
+    public async Task<IdentityResult?> RemoveAdminAsync(ClaimsPrincipal principal)
+    {
+        var user = await _userManager.GetUserAsync(principal);
+        if (user == null)
+            return null;
+
+        if (!await _userManager.IsInRoleAsync(user, "Admin"))
+            return IdentityResult.Success;
+
+        return await _userManager.RemoveFromRoleAsync(user, "Admin");
+    }
 }

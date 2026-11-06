@@ -68,10 +68,35 @@ namespace DatingApp.Controllers
             return Ok(new { message = "Admin role granted. Please sign in again." });
         }
 
+        [Authorize]
+        [HttpPatch("RemoveAdmin")]
+        public async Task<IActionResult> RemoveAdmin()
+        {
+            var result = await _authService.RemoveAdminAsync(User);
+            if (result == null)
+                return Unauthorized();
+
+            if (!result.Succeeded)
+                return BadRequest(new
+                {
+                    message = string.Join(" ", result.Errors.Select(error => error.Description))
+                });
+
+            return Ok(new { message = "Admin role removed. Please sign in again." });
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpGet("Admin")]
-        public IActionResult Admin()
+        public async Task<IActionResult> Admin()
         {
+            var user = await _authService.GetCurrentUserAsync(User);
+            if (user == null)
+                return Unauthorized();
+
+            // A previously issued JWT may still contain the removed Admin role.
+            if (!user.Roles.Contains("Admin"))
+                return Forbid();
+
             return Ok(new { message = "Admin access confirmed by the backend." });
         }
     }

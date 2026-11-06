@@ -10,5 +10,6 @@ namespace DatingApp.Services
         Task<AuthResponse?> LoginAsync(AuthLoginRequest request);
         Task<UserMeResponse?> GetCurrentUserAsync(ClaimsPrincipal principal);
         Task<IdentityResult?> DelegateAdminAsync(ClaimsPrincipal principal, DelegateAdminRequest request);
+        Task<IdentityResult?> RemoveAdminAsync(ClaimsPrincipal principal);
     }
 }
