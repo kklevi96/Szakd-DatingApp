@@ -58,12 +58,12 @@ namespace DatingApp.Services
                 };
             }
 
-            if (currentUser.MBTICode != otherUser.MBTICode)
+            if (Math.Abs((long)currentUser.MBTICode - otherUser.MBTICode) > 3)
             {
                 return new CompatibilityCheckResponse
                 {
                     IsCompatible = false,
-                    Reason = "MBTI codes don't match.",
+                    Reason = "MBTI code difference exceeds 3.",
                     OtherUser = UserMapper.ToResponse(otherUser)
                 };
             }
@@ -113,15 +113,16 @@ namespace DatingApp.Services
         public async Task<List<CompatibilityResponse>> GetMyCompatibilitiesAsync(string currentUserId)
         {
             var compatibilities = await _context.Compatibilities
-                .Include(c => c.UserA)
-                .Include(c => c.UserB)
+                .AsSplitQuery()
+                .Include(c => c.UserA).ThenInclude(user => user.HobbyUsers).ThenInclude(hu => hu.Hobby)
+                .Include(c => c.UserB).ThenInclude(user => user.HobbyUsers).ThenInclude(hu => hu.Hobby)
                 .Where(c => c.UserId_A == currentUserId || c.UserId_B == currentUserId)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
             return compatibilities
                 .Where(c => c.UserA.WantsRelationship && c.UserB.WantsRelationship &&
-                            c.UserA.MBTICode == c.UserB.MBTICode &&
+                            Math.Abs((long)c.UserA.MBTICode - c.UserB.MBTICode) <= 3 &&
                             AreMutuallyInterested(c.UserA, c.UserB))
                 .Select(CompatibilityMapper.ToResponse)
                 .ToList();
@@ -151,7 +152,7 @@ namespace DatingApp.Services
 
             foreach (var otherUser in otherUsers)
             {
-                if (currentUser.MBTICode != otherUser.MBTICode ||
+                if (Math.Abs((long)currentUser.MBTICode - otherUser.MBTICode) > 3 ||
                     !AreMutuallyInterested(currentUser, otherUser))
                 {
                     continue;

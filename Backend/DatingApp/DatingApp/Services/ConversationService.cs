@@ -95,7 +95,7 @@ namespace DatingApp.Services
                         (compatibility.UserId_A == otherUserId &&
                          compatibility.UserId_B == currentUserId)) &&
                         compatibility.UserA.WantsRelationship && compatibility.UserB.WantsRelationship &&
-                        compatibility.UserA.MBTICode == compatibility.UserB.MBTICode &&
+                        Math.Abs((long)compatibility.UserA.MBTICode - compatibility.UserB.MBTICode) <= 3 &&
                         ((compatibility.UserA.Gender == "male" && compatibility.UserB.InterestedinMan) ||
                          (compatibility.UserA.Gender == "female" && compatibility.UserB.InterestedinWoman)) &&
                         ((compatibility.UserB.Gender == "male" && compatibility.UserA.InterestedinMan) ||
