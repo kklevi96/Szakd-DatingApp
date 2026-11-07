@@ -6,6 +6,7 @@ namespace DatingApp.Dtos.Meetings
     {
         public int Id { get; set; }
         public int LocationId { get; set; }
+        public int ConversationId { get; set; }
         public string LocationName { get; set; } = null!;
         public string LocationAddress { get; set; } = null!;
         public DateTime MeetingDate { get; set; }

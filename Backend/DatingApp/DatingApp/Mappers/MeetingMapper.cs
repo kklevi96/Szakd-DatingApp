@@ -11,19 +11,18 @@ namespace DatingApp.Mappers
             return new MeetingResponse
             {
                 Id = meeting.Id,
+                CreatedAt = meeting.CreatedAt,
                 LocationId = meeting.LocationId,
                 LocationName = meeting.Location.Name,
                 LocationAddress = meeting.Location.Address,
+                ConversationId = meeting.ConversationId,
                 MeetingDate = meeting.MeetingDate,
-                CreatedAt = meeting.CreatedAt,
-
                 UserIds = meeting.MeetingAttendances
                     .Select(ma => ma.UserId)
                     .ToList(),
-
                 Users = meeting.MeetingAttendances
                     .Select(ma => UserMapper.ToResponse(ma.User))
-                    .ToList()
+                    .ToList(),
             };
         }
     }

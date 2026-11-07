@@ -1,4 +1,5 @@
 ﻿using DatingApp.Data;
+using DatingApp.Dtos.Conversations;
 using DatingApp.Dtos.Meetings;
 using DatingApp.Mappers;
 using DatingApp.Models;
@@ -9,10 +10,12 @@ namespace DatingApp.Services
     public class MeetingService : IMeetingService
     {
         private readonly DatingAppDbContext _context;
+        private readonly IConversationService _conversationService;
 
-        public MeetingService(DatingAppDbContext context)
+        public MeetingService(DatingAppDbContext context, IConversationService conversationService)
         {
             _context = context;
+            _conversationService = conversationService;
         }
 
         public async Task<MeetingResponse> CreateMeetingAsync(string currentUserId, CreateMeetingRequest request)
@@ -43,8 +46,19 @@ namespace DatingApp.Services
                 throw new KeyNotFoundException("Location not found.");
             }
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var conversation = await _conversationService.CreateConversationAsync(
+                currentUserId,
+                new CreateConversationRequest
+                {
+                    IsGroup = false,
+                    OtherUserIds = new List<string> { request.OtherUserId }
+                });
+
             var meeting = new Meeting
             {
+                ConversationId = conversation.Id,
                 LocationId = request.LocationId,
                 MeetingDate = request.MeetingDate,
                 MeetingAttendances = new List<MeetingAttendance>
@@ -65,6 +79,7 @@ namespace DatingApp.Services
             });
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return await GetMeetingResponseAsync(meeting.Id);
         }

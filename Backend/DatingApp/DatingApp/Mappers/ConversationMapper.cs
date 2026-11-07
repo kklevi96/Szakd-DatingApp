@@ -18,7 +18,10 @@ namespace DatingApp.Mappers
                     .ToList(),
                 Members = conversation.ConversationMembers
                     .Select(member => UserMapper.ToResponse(member.User))
-                    .ToList()
+                    .ToList(),
+                Meetings = conversation.Meetings
+                    .Select(meeting => MeetingMapper.ToResponse(meeting))
+                    .ToList(),
             };
         }
     }

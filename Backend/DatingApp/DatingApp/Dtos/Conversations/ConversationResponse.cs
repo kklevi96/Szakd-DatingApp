@@ -1,4 +1,5 @@
-﻿using DatingApp.Dtos.Users;
+﻿using DatingApp.Dtos.Meetings;
+using DatingApp.Dtos.Users;
 
 namespace DatingApp.Dtos.Conversations
 {
@@ -10,5 +11,6 @@ namespace DatingApp.Dtos.Conversations
         public string? Name { get; set; }
         public List<string> MemberUserIds { get; set; } = new();
         public List<UserResponse> Members { get; set; } = new();
+        public List<MeetingResponse> Meetings { get; set; }
     }
 }

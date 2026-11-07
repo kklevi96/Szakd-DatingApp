@@ -438,6 +438,9 @@ namespace DatingApp.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -451,6 +454,8 @@ namespace DatingApp.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
 
                     b.HasIndex("LocationId");
 
@@ -763,11 +768,19 @@ namespace DatingApp.Data.Migrations
 
             modelBuilder.Entity("DatingApp.Models.Meeting", b =>
                 {
+                    b.HasOne("DatingApp.Models.Conversation", "Conversation")
+                        .WithMany("Meetings")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("DatingApp.Models.Location", "Location")
                         .WithMany("Meetings")
                         .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Conversation");
 
                     b.Navigation("Location");
                 });
@@ -883,6 +896,8 @@ namespace DatingApp.Data.Migrations
             modelBuilder.Entity("DatingApp.Models.Conversation", b =>
                 {
                     b.Navigation("ConversationMembers");
+
+                    b.Navigation("Meetings");
 
                     b.Navigation("Messages");
                 });
