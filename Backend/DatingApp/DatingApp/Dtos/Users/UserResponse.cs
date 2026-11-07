@@ -1,4 +1,6 @@
-﻿namespace DatingApp.Dtos.Users
+using DatingApp.Dtos.Hobbies;
+
+namespace DatingApp.Dtos.Users
 {
     public class UserResponse
     {
@@ -11,5 +13,6 @@
         public bool InterestedinMan { get; set; }
         public string Gender { get; set; } = null!;
         public int MBTICode { get; set; }
+        public List<HobbyResponse> Hobbies { get; set; } = new List<HobbyResponse>();
     }
 }

@@ -1,3 +1,4 @@
+using DatingApp.Dtos.Hobbies;
 ﻿using DatingApp.Dtos.Users;
 using DatingApp.Models;
 
@@ -17,7 +18,12 @@ namespace DatingApp.Mappers
                 InterestedinWoman = user.InterestedinWoman,
                 InterestedinMan = user.InterestedinMan,
                 Gender = user.Gender,
-                MBTICode = user.MBTICode
+                MBTICode = user.MBTICode,
+                Hobbies = user.HobbyUsers?
+                    .Where(hu => hu.Hobby != null)
+                    .Select(hu => new HobbyResponse { Id = hu.HobbyId, Name = hu.Hobby.Name })
+                    .OrderBy(hobby => hobby.Name)
+                    .ToList() ?? new List<HobbyResponse>()
             };
         }
 
