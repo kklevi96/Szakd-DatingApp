@@ -12,6 +12,8 @@ namespace DatingApp.Mappers
                 Id = user.Id,
                 FirstName = user.FirstName,
                 Age = CalculateAge(user.BirthDay),
+                WantsRelationship = user.WantsRelationship,
+                WantsFriendship = user.WantsFriendship,
                 InterestedinWoman = user.InterestedinWoman,
                 InterestedinMan = user.InterestedinMan,
                 Gender = user.Gender,

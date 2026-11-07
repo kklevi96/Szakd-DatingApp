@@ -1,0 +1,11 @@
+<h2 mat-dialog-title>Let's complete your profile!</h2>
+<mat-dialog-content>
+  <app-hobby #hobbyPicker (savingChange)="dialogRef.disableClose = $event"></app-hobby>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-raised-button type="button"
+          [disabled]="hobbyPicker.isLoading() || hobbyPicker.pendingIds().size > 0"
+          (click)="dialogRef.close()">
+    Done
+  </button>
+</mat-dialog-actions>

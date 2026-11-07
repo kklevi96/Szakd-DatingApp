@@ -187,6 +187,12 @@ namespace DatingApp.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<bool>("WantsFriendship")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("WantsRelationship")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")

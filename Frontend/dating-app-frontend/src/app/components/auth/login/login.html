@@ -50,9 +50,9 @@
         mat-raised-button
         type="submit"
         class="big-button"
-        [disabled]="isLoading || loginForm.invalid"
+        [disabled]="isLoading() || loginForm.invalid"
       >
-        {{ isLoading ? 'Signing in...' : 'Sign in' }}
+        {{ isLoading() ? 'Signing in...' : 'Sign in' }}
       </button>
     </form>
   </div>

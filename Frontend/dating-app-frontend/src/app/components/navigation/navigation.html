@@ -14,6 +14,18 @@
     <span class="example-spacer"></span>
 
     @if (auth.isLoggedIn()) {
+      @if (auth.isAdmin()) {
+        <a mat-button routerLink="/admin">
+          <mat-icon>admin_panel_settings</mat-icon>
+          Admin
+        </a>
+      } @else if (auth.currentUser()?.canRequestAdmin) {
+        <a mat-button routerLink="/become-admin">
+          <mat-icon>key</mat-icon>
+          Become admin
+        </a>
+      }
+
       <a mat-button routerLink="/logout">
         <mat-icon>logout</mat-icon>
         Logout

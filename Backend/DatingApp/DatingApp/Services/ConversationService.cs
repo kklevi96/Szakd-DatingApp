@@ -72,19 +72,6 @@ namespace DatingApp.Services
             {
                 var otherUserId = otherUserIds[0];
 
-                var compatible = await _context.Compatibilities
-                    .AnyAsync(compatibility =>
-                        (compatibility.UserId_A == currentUserId &&
-                         compatibility.UserId_B == otherUserId) ||
-                        (compatibility.UserId_A == otherUserId &&
-                         compatibility.UserId_B == currentUserId));
-
-                if (!compatible)
-                {
-                    throw new ArgumentException(
-                        "You can only create a direct conversation with a compatible user.");
-                }
-
                 var existingConversation = await _context.Conversations
                     .Include(conversation => conversation.ConversationMembers)
                     .ThenInclude(member => member.User)
@@ -100,6 +87,26 @@ namespace DatingApp.Services
                 {
                     return ConversationMapper.ToResponse(existingConversation);
                 }
+
+                var compatible = await _context.Compatibilities
+                    .AnyAsync(compatibility =>
+                        ((compatibility.UserId_A == currentUserId &&
+                         compatibility.UserId_B == otherUserId) ||
+                        (compatibility.UserId_A == otherUserId &&
+                         compatibility.UserId_B == currentUserId)) &&
+                        compatibility.UserA.WantsRelationship && compatibility.UserB.WantsRelationship &&
+                        compatibility.UserA.MBTICode == compatibility.UserB.MBTICode &&
+                        ((compatibility.UserA.Gender == "male" && compatibility.UserB.InterestedinMan) ||
+                         (compatibility.UserA.Gender == "female" && compatibility.UserB.InterestedinWoman)) &&
+                        ((compatibility.UserB.Gender == "male" && compatibility.UserA.InterestedinMan) ||
+                         (compatibility.UserB.Gender == "female" && compatibility.UserA.InterestedinWoman)));
+
+                if (!compatible)
+                {
+                    throw new ArgumentException(
+                        "You can only create a direct conversation with a compatible user.");
+                }
+
             }
 
             var memberUserIds = otherUserIds

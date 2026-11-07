@@ -9,103 +9,142 @@
       #registerForm="ngForm"
       (ngSubmit)="sendRegisterCredentials(registerForm)"
     >
-      <mat-form-field appearance="outline">
-        <mat-label>First name</mat-label>
-        <input matInput name="firstName" [(ngModel)]="firstName"
-               autocomplete="given-name" required />
-        <mat-error>First name is required.</mat-error>
-      </mat-form-field>
+      <mat-stepper orientation="horizontal" linear animationDuration="300ms">
+        <mat-step
+          label="Basic details"
+          [completed]="basicData.valid === true && password === confirmPassword && birthDayInput.validity.valid"
+        >
+          <div ngModelGroup="basicData" #basicData="ngModelGroup">
+            <mat-form-field appearance="outline">
+              <mat-label>First name</mat-label>
+              <input matInput name="firstName" [(ngModel)]="firstName"
+                     autocomplete="given-name" required />
+              <mat-error>First name is required.</mat-error>
+            </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Last name</mat-label>
-        <input matInput name="lastName" [(ngModel)]="lastName"
-               autocomplete="family-name" required />
-        <mat-error>Last name is required.</mat-error>
-      </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Last name</mat-label>
+              <input matInput name="lastName" [(ngModel)]="lastName"
+                     autocomplete="family-name" required />
+              <mat-error>Last name is required.</mat-error>
+            </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Email address</mat-label>
-        <input matInput type="email" name="email" [(ngModel)]="email"
-               autocomplete="email" required email />
-        <mat-error>Enter a valid email address.</mat-error>
-      </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Email address</mat-label>
+              <input matInput type="email" name="email" [(ngModel)]="email"
+                     autocomplete="email" required email />
+              <mat-error>Enter a valid email address.</mat-error>
+            </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Password</mat-label>
-        <input matInput type="password" name="password"
-               [(ngModel)]="password" autocomplete="new-password"
-               required pattern=".*[a-z].*" />
-        <mat-hint>Include at least one lowercase letter.</mat-hint>
-        <mat-error>Include at least one lowercase letter.</mat-error>
-      </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Password</mat-label>
+              <input matInput type="password" name="password"
+                     [(ngModel)]="password" autocomplete="new-password"
+                     required pattern=".*[a-z].*" />
+              <mat-hint>Include at least one lowercase letter.</mat-hint>
+              <mat-error>Include at least one lowercase letter.</mat-error>
+            </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Confirm password</mat-label>
-        <input matInput type="password" name="confirmPassword"
-               [(ngModel)]="confirmPassword"
-               autocomplete="new-password" required />
-        <mat-error>Please confirm your password.</mat-error>
-      </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Confirm password</mat-label>
+              <input matInput type="password" name="confirmPassword"
+                     [(ngModel)]="confirmPassword"
+                     autocomplete="new-password" required />
+              <mat-error>Please confirm your password.</mat-error>
+            </mat-form-field>
 
-      @if (confirmPassword && password !== confirmPassword) {
-        <p class="error-message">Passwords do not match.</p>
-      }
+            @if (confirmPassword && password !== confirmPassword) {
+              <p class="error-message">Passwords do not match.</p>
+            }
 
-      <mat-form-field appearance="outline">
-        <mat-label>Date of birth</mat-label>
-        <input matInput type="date" name="birthDay"
-               [(ngModel)]="birthDay" autocomplete="bday" required />
-        <mat-error>Date of birth is required.</mat-error>
-      </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Date of birth</mat-label>
+              <input matInput #birthDayInput type="date" name="birthDay"
+                     [(ngModel)]="birthDay" [min]="minDate" [max]="maxDate"
+                     autocomplete="bday" required />
+              @if (birthDay && !birthDayInput.validity.valid) {
+                <mat-hint class="error-message">Enter a date between {{ minDate }} and {{ maxDate }}.</mat-hint>
+              }
+              <mat-error>Date of birth is required.</mat-error>
+            </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Gender</mat-label>
+            <mat-form-field appearance="outline">
+              <mat-label>Gender</mat-label>
 
-        <mat-select name="gender" [(ngModel)]="gender" required>
-          <mat-option value="male">Male</mat-option>
-          <mat-option value="female">Female</mat-option>
-        </mat-select>
+              <mat-select name="gender" [(ngModel)]="gender" required>
+                <mat-option value="male">Male</mat-option>
+                <mat-option value="female">Female</mat-option>
+              </mat-select>
 
-        <mat-error>Please select your gender.</mat-error>
-      </mat-form-field>
+              <mat-error>Please select your gender.</mat-error>
+            </mat-form-field>
+            <button
+              mat-raised-button
+              matStepperNext
+              type="button"
+              class="big-button"
+              [disabled]="basicData.invalid || password !== confirmPassword || !birthDayInput.validity.valid"
+            >
+              Next
+            </button>
+          </div>
+        </mat-step>
+        <mat-step label="Profile">
+          <fieldset>
+            <legend>What are you looking for?</legend>
+            <mat-checkbox name="wantsRelationship" [(ngModel)]="wantsRelationship">Relationship</mat-checkbox>
+            <mat-checkbox name="wantsFriendship" [(ngModel)]="wantsFriendship">Friendship</mat-checkbox>
+            <p>Leave both unchecked to pause searching.</p>
+          </fieldset>
 
-      <fieldset>
-        <legend>Interested in</legend>
+          <fieldset>
+            <legend>Interested in</legend>
 
-        <mat-checkbox name="interestedinWoman"
-                      [(ngModel)]="interestedinWoman">
-          Women
-        </mat-checkbox>
+            <mat-checkbox name="interestedinWoman"
+                          [(ngModel)]="interestedinWoman">
+              Women
+            </mat-checkbox>
 
-        <mat-checkbox name="interestedinMan"
-                      [(ngModel)]="interestedinMan">
-          Men
-        </mat-checkbox>
-      </fieldset>
+            <mat-checkbox name="interestedinMan"
+                          [(ngModel)]="interestedinMan">
+              Men
+            </mat-checkbox>
+          </fieldset>
 
-      <mat-form-field appearance="outline">
-        <mat-label>MBTI code</mat-label>
-        <input matInput type="number" name="mbtiCode"
-               [(ngModel)]="mbtiCode" step="1" required />
-        <mat-hint>Enter a whole number manually.</mat-hint>
-        <mat-error>MBTI code is required.</mat-error>
-      </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>MBTI code</mat-label>
+            <input matInput type="number" name="mbtiCode"
+                   [(ngModel)]="mbtiCode" step="1" required />
+            <mat-hint>Enter a whole number manually.</mat-hint>
+            <mat-error>MBTI code is required.</mat-error>
+          </mat-form-field>
 
-      @if (errorMessage()) {
-        <p class="error-message" role="alert">
-          {{ errorMessage() }}
-        </p>
-      }
+          @if (errorMessage()) {
+            <p class="error-message" role="alert">
+              {{ errorMessage() }}
+            </p>
+          }
 
-      <button
-        mat-raised-button
-        type="submit"
-        class="big-button"
-        [disabled]="registerForm.invalid || isLoading() ||
-              password !== confirmPassword"
-      >
-        {{ isLoading() ? 'Creating account...' : 'Register' }}
-      </button>
+          <button
+            mat-button
+            matStepperPrevious
+            type="button"
+            [disabled]="isLoading()"
+          >
+            Back
+          </button>
+
+          <button
+            mat-raised-button
+            type="submit"
+            class="big-button"
+            [disabled]="registerForm.invalid || isLoading() ||
+                password !== confirmPassword || !birthDayInput.validity.valid"
+          >
+            {{ isLoading() ? 'Creating account...' : 'Register' }}
+          </button>
+        </mat-step>
+      </mat-stepper>
     </form>
   </div>
 </section>

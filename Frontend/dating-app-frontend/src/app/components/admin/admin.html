@@ -1,0 +1,12 @@
+<section class="admin-page">
+  <h1>Admin</h1>
+
+  @if (errorMessage()) {
+    <p class="error-message" role="alert">{{ errorMessage() }}</p>
+  } @else if (message()) {
+    <p>{{ message() }}</p>
+    <p>Signed in as {{ auth.currentUser()?.email }}</p>
+  } @else {
+    <p>Loading...</p>
+  }
+</section>

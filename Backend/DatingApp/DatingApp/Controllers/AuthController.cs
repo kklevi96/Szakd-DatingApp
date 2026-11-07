@@ -52,6 +52,19 @@ namespace DatingApp.Controllers
         }
 
         [Authorize]
+        [HttpPatch("search-preferences")]
+        public async Task<IActionResult> UpdateSearchPreferences(SearchPreferencesRequest request)
+        {
+            var result = await _authService.UpdateSearchPreferencesAsync(User, request);
+            if (result == null)
+                return Unauthorized();
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            return NoContent();
+        }
+
+        [Authorize]
         [HttpPatch("DelegateAdmin")]
         public async Task<IActionResult> DelegateAdmin([FromBody] DelegateAdminRequest request)
         {
@@ -93,7 +106,6 @@ namespace DatingApp.Controllers
             if (user == null)
                 return Unauthorized();
 
-            // A previously issued JWT may still contain the removed Admin role.
             if (!user.Roles.Contains("Admin"))
                 return Forbid();
 

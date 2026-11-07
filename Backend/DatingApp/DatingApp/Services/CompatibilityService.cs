@@ -38,6 +38,36 @@ namespace DatingApp.Services
             var currentUser = await _userService.GetByIdAsync(currentUserId);
             var otherUser = await _userService.GetByIdAsync(otherUserId);
 
+            if (!currentUser.WantsRelationship || !otherUser.WantsRelationship)
+            {
+                return new CompatibilityCheckResponse
+                {
+                    IsCompatible = false,
+                    Reason = "Both users must be looking for a relationship.",
+                    OtherUser = UserMapper.ToResponse(otherUser)
+                };
+            }
+
+            if (!AreMutuallyInterested(currentUser, otherUser))
+            {
+                return new CompatibilityCheckResponse
+                {
+                    IsCompatible = false,
+                    Reason = "Gender preferences are not mutual.",
+                    OtherUser = UserMapper.ToResponse(otherUser)
+                };
+            }
+
+            if (currentUser.MBTICode != otherUser.MBTICode)
+            {
+                return new CompatibilityCheckResponse
+                {
+                    IsCompatible = false,
+                    Reason = "MBTI codes don't match.",
+                    OtherUser = UserMapper.ToResponse(otherUser)
+                };
+            }
+
             var (userAId, userBId) = NormalizeUserPair(currentUserId, otherUserId);
 
             var existingCompatibility = await _context.Compatibilities
@@ -52,16 +82,6 @@ namespace DatingApp.Services
                     IsCompatible = true,
                     Reason = "Compatibility already exists.",
                     Compatibility = CompatibilityMapper.ToResponse(existingCompatibility),
-                    OtherUser = UserMapper.ToResponse(otherUser)
-                };
-            }
-
-            if (currentUser.MBTICode != otherUser.MBTICode)
-            {
-                return new CompatibilityCheckResponse
-                {
-                    IsCompatible = false,
-                    Reason = "MBTI codes don't match.",
                     OtherUser = UserMapper.ToResponse(otherUser)
                 };
             }
@@ -99,15 +119,23 @@ namespace DatingApp.Services
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
-            return compatibilities.Select(CompatibilityMapper.ToResponse).ToList();
+            return compatibilities
+                .Where(c => c.UserA.WantsRelationship && c.UserB.WantsRelationship &&
+                            c.UserA.MBTICode == c.UserB.MBTICode &&
+                            AreMutuallyInterested(c.UserA, c.UserB))
+                .Select(CompatibilityMapper.ToResponse)
+                .ToList();
         }
 
         public async Task<int> GenerateMyCompatibilitiesAsync(string currentUserId)
         {
             var currentUser = await _userService.GetByIdAsync(currentUserId);
 
+            if (!currentUser.WantsRelationship)
+                return 0;
+
             var otherUsers = await _context.Users
-                .Where(u => u.Id != currentUserId)
+                .Where(u => u.Id != currentUserId && u.WantsRelationship)
                 .ToListAsync();
 
             var existingPairs = await _context.Compatibilities
@@ -123,7 +151,8 @@ namespace DatingApp.Services
 
             foreach (var otherUser in otherUsers)
             {
-                if (currentUser.MBTICode != otherUser.MBTICode)
+                if (currentUser.MBTICode != otherUser.MBTICode ||
+                    !AreMutuallyInterested(currentUser, otherUser))
                 {
                     continue;
                 }
@@ -153,6 +182,22 @@ namespace DatingApp.Services
             }
 
             return newCompatibilities.Count;
+        }
+
+        private static bool AreMutuallyInterested(DatingappUser user, DatingappUser otherUser)
+        {
+            return IsInterestedIn(user, otherUser.Gender) &&
+                   IsInterestedIn(otherUser, user.Gender);
+        }
+
+        private static bool IsInterestedIn(DatingappUser user, string gender)
+        {
+            return gender switch
+            {
+                "male" => user.InterestedinMan,
+                "female" => user.InterestedinWoman,
+                _ => false
+            };
         }
 
         private static (string userAId, string userBId) NormalizeUserPair(string userId1, string userId2)

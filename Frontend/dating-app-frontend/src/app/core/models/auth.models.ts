@@ -4,6 +4,8 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   birthDay: string;
+  wantsRelationship: boolean;
+  wantsFriendship: boolean;
   interestedinWoman: boolean;
   interestedinMan: boolean;
   gender: string;
@@ -16,4 +18,20 @@ export interface RegisterResponse {
     code: string;
     description: string;
   }[];
+}
+
+export interface LoginResponse {
+  token: string;
+  expiration: string;
+  id: string;
+  email: string;
+}
+
+export interface AdminResponse {
+  message: string;
+}
+
+export interface SearchPreferences {
+  wantsRelationship: boolean;
+  wantsFriendship: boolean;
 }

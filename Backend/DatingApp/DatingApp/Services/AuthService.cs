@@ -78,6 +78,8 @@ public class AuthService : IAuthService
             LastName = request.LastName,
             BirthDay = request.BirthDay,
 
+            WantsRelationship = request.WantsRelationship,
+            WantsFriendship = request.WantsFriendship,
             InterestedinWoman = request.InterestedinWoman,
             InterestedinMan = request.InterestedinMan,
 
@@ -113,6 +115,8 @@ public class AuthService : IAuthService
             FirstName = user.FirstName,
             LastName = user.LastName,
             BirthDay = user.BirthDay,
+            WantsRelationship = user.WantsRelationship,
+            WantsFriendship = user.WantsFriendship,
             InterestedinWoman = user.InterestedinWoman,
             InterestedinMan = user.InterestedinMan,
             Gender = user.Gender,
@@ -120,6 +124,19 @@ public class AuthService : IAuthService
             Roles = (await _userManager.GetRolesAsync(user)).ToList(),
             CanRequestAdmin = true
         };
+    }
+
+    public async Task<IdentityResult?> UpdateSearchPreferencesAsync(
+        ClaimsPrincipal principal, SearchPreferencesRequest request)
+    {
+        var user = await _userManager.GetUserAsync(principal);
+        if (user == null)
+            return null;
+
+        user.WantsRelationship = request.WantsRelationship;
+        user.WantsFriendship = request.WantsFriendship;
+
+        return await _userManager.UpdateAsync(user);
     }
 
     public async Task<IdentityResult?> DelegateAdminAsync(

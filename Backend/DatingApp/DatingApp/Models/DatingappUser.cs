@@ -15,6 +15,10 @@ namespace DatingApp.Models
 
         public bool InterestedinMan { get; set; }
 
+        public bool WantsRelationship { get; set; }
+
+        public bool WantsFriendship { get; set; }
+
         public string Gender { get; set; }
 
         public int MBTICode { get; set; }
