@@ -1,0 +1,91 @@
+<section class="dating-page">
+  <header class="page-header">
+    <h1>Dating</h1>
+    <p>Discover people who match your interests.</p>
+  </header>
+  <section class="search-settings" aria-label="Dating preferences">
+    <mat-slide-toggle [checked]="wantsRelationship()"
+                      [disabled]="isLoadingProfile() || isSaving()"
+                      (change)="setDatingEnabled($event.checked)">
+      Looking for a relationship
+    </mat-slide-toggle>
+    @if (isSaving()) { <span role="status">Saving...</span> }
+  </section>
+  @if (errorMessage()) {
+    <div class="error-panel" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <button mat-button type="button" [disabled]="isLoadingProfile() || isSaving()"
+              (click)="loadProfile()">Try again</button>
+    </div>
+  }
+  @if (isLoadingProfile()) {
+    <p role="status">Loading your profile...</p>
+  } @else if (user(); as currentUser) {
+    @if (!wantsRelationship()) {
+      <div class="paused-panel">
+        <mat-icon>pause_circle</mat-icon>
+        <h2>Dating is paused</h2>
+        <p>Turn on the switch to see your matches.</p>
+        <p>Your existing conversations remain available.</p>
+      </div>
+    } @else {
+      <div class="results-header">
+        <div>
+          <h2>Your matches</h2>
+          <p>Your MBTI code: <strong>{{ currentUser.mbtiCode }}</strong></p>
+          <p>Shared hobbies are highlighted in blue.</p>
+        </div>
+        <button mat-stroked-button type="button"
+                [disabled]="isLoadingMatches() || isSaving()" (click)="loadProfile()">
+          <mat-icon>refresh</mat-icon> Refresh matches
+        </button>
+      </div>
+      @if (isLoadingMatches()) {
+        <p role="status">Finding your matches...</p>
+      } @else if (!errorMessage() && cards().length === 0 && !isSaving()) {
+        <div class="empty-panel">
+          <h3>No matches yet</h3>
+          <p>No users currently match your dating preferences and MBTI range.</p>
+        </div>
+      } @else {
+        <div class="matches-grid">
+          @for (card of cards(); track card.user.id) {
+            <mat-card class="profile-card" [class.exact-match]="card.difference === 0"
+                      [class.difference-one]="card.difference === 1"
+                      [class.difference-two]="card.difference === 2"
+                      [class.difference-three]="card.difference === 3">
+              <mat-card-header>
+                <mat-card-title>{{ card.user.firstName }}</mat-card-title>
+                <mat-card-subtitle>
+                  @if (card.difference === 0) {
+                    <span class="match-label"><mat-icon>auto_awesome</mat-icon> Exact MBTI match</span>
+                  } @else { MBTI difference: {{ card.difference }} }
+                </mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <p class="mbti-code">MBTI <strong>{{ card.user.mbtiCode }}</strong></p>
+                <mat-chip-set [attr.aria-label]="card.user.firstName + ' hobbies'">
+                  @for (hobby of card.hobbies; track hobby.id) {
+                    <mat-chip [class.shared-hobby]="hobby.isShared">
+                      @if (hobby.isShared) { <mat-icon matChipAvatar>done</mat-icon> }
+                      {{ hobby.name }}
+                    </mat-chip>
+                  }
+                </mat-chip-set>
+                @if (card.hobbies.length === 0) { <p>No hobbies selected yet.</p> }
+              </mat-card-content>
+              <mat-card-actions>
+                <button mat-stroked-button type="button" disabled>
+                  <mat-icon>chat_bubble_outline</mat-icon> Message
+                </button>
+                <button mat-stroked-button type="button" disabled>
+                  <mat-icon>event</mat-icon> Invite to a meeting
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          }
+        </div>
+      }
+    }
+  }
+</section>
