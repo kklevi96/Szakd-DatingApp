@@ -1,0 +1,14 @@
+.admin-access {
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 0 16px;
+}
+
+mat-form-field, button {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.error-message {
+  color: #b91c1c;
+}

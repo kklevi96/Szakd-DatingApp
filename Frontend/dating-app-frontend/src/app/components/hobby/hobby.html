@@ -1,0 +1,23 @@
+<p>Choose your hobbies. Your choices are saved automatically.</p>
+@if (isLoading()) {
+  <p role="status">Loading hobbies...</p>
+} @else if (errorMessage()) {
+  <p class="error-message" role="alert">{{ errorMessage() }}</p>
+  <button mat-button type="button" (click)="loadHobbies()">Try again</button>
+} @else if (hobbies().length === 0) {
+  <p>No hobbies are available yet.</p>
+} @else {
+  <mat-chip-listbox multiple aria-label="Choose your hobbies">
+    @for (hobby of hobbies(); track hobby.id) {
+      <mat-chip-option
+        [selected]="selectedIds().has(hobby.id)"
+        [disabled]="pendingIds().has(hobby.id)"
+        [attr.aria-busy]="pendingIds().has(hobby.id)"
+        (selectionChange)="changeHobby(hobby, $event)"
+      >{{ hobby.name }}</mat-chip-option>
+    }
+  </mat-chip-listbox>
+}
+@if (pendingIds().size > 0) {
+  <p role="status">Saving your choices...</p>
+}
