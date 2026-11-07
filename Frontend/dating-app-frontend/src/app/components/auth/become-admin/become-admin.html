@@ -9,6 +9,7 @@
     <form #adminForm="ngForm" (ngSubmit)="delegateAdmin(adminForm)">
       <mat-form-field appearance="outline">
         <mat-label>Admin password</mat-label>
+        <mat-hint>DatingAppAdmin2026!</mat-hint>
         <input matInput type="password" name="password" [(ngModel)]="password"
                autocomplete="off" required />
         <mat-error>Admin password is required.</mat-error>

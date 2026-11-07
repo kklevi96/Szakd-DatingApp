@@ -1,4 +1,6 @@
-:host { display: block; }
+:host {
+  display: block;
+}
 
 button[mat-raised-button] {
   border-radius: 12px;
@@ -10,8 +12,12 @@ button[mat-raised-button]:not(:disabled) {
   color: white;
 }
 
-button[mat-raised-button]:hover:not(:disabled) { filter: brightness(1.1); }
+button[mat-raised-button]:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  button[mat-raised-button] { transition: none; }
+  button[mat-raised-button] {
+    transition: none;
+  }
 }

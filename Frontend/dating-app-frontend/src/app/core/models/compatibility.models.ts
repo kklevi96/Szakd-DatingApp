@@ -3,6 +3,7 @@ import { Hobby } from './hobby.models';
 export interface CompatibleUser {
   id: string;
   firstName: string;
+  age: number;
   mbtiCode: number;
   hobbies: Hobby[];
 }

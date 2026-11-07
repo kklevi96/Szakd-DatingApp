@@ -15,6 +15,7 @@ export interface UserMeResponse {
   email: string;
   firstName: string;
   lastName: string;
+  mbtiCode: number;
   wantsRelationship: boolean;
   wantsFriendship: boolean;
   roles: string[];
@@ -83,6 +84,10 @@ export class AuthService {
 
   getAdminStatus(): Observable<AdminResponse> {
     return this.http.get<AdminResponse>(`${this.baseUrl}/auth/Admin`);
+  }
+
+  removeAdmin(): Observable<AdminResponse> {
+    return this.http.patch<AdminResponse>(`${this.baseUrl}/auth/RemoveAdmin`, {});
   }
 
   saveToken(token: string): void {

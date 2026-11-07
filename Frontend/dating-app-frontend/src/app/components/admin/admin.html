@@ -9,4 +9,12 @@
   } @else {
     <p>Loading...</p>
   }
+
+  @if (message()) {
+    <button mat-stroked-button type="button" [disabled]="isRemovingAdmin()"
+            (click)="removeAdmin()">
+      {{ isRemovingAdmin() ? 'Removing admin access...' : 'Remove my admin access' }}
+    </button>
+    <p>You will be signed out after removing your admin access.</p>
+  }
 </section>

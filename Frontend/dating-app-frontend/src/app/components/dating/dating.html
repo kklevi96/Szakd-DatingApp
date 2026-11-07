@@ -55,7 +55,7 @@
                       [class.difference-two]="card.difference === 2"
                       [class.difference-three]="card.difference === 3">
               <mat-card-header>
-                <mat-card-title>{{ card.user.firstName }}</mat-card-title>
+                <mat-card-title>{{ card.user.firstName }} ({{ card.user.age }})</mat-card-title>
                 <mat-card-subtitle>
                   @if (card.difference === 0) {
                     <span class="match-label"><mat-icon>auto_awesome</mat-icon> Exact MBTI match</span>

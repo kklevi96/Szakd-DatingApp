@@ -9,7 +9,10 @@ import { BecomeAdmin } from './components/auth/become-admin/become-admin';
 import { Admin } from './components/admin/admin';
 import { AuthGuardAdmin } from './core/guards/auth-guard-admin';
 
+import { Dating } from './components/dating/dating';
+
 export const routes: Routes = [
+  { path: 'dating', component: Dating, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
   {
     path: 'home',
