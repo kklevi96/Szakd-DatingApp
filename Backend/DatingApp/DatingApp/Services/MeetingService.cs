@@ -106,6 +106,39 @@ namespace DatingApp.Services
             return meetings.Select(MeetingMapper.ToResponse).ToList();
         }
 
+        public async Task<List<MeetingResponse>> GetMeetingsByConversationAsync(int conversationId, string currentUserId)
+        {
+            var conversation = await _context.Conversations
+                .Where(c => c.Id == conversationId)
+                .Select(c => new
+                {
+                    IsMember = c.ConversationMembers.Any(member => member.UserId == currentUserId)
+                })
+                .FirstOrDefaultAsync();
+
+            if (conversation == null)
+            {
+                throw new KeyNotFoundException("Conversation not found.");
+            }
+
+            if (!conversation.IsMember)
+            {
+                throw new UnauthorizedAccessException("You are not a member of this conversation.");
+            }
+
+            var meetings = await MeetingQuery()
+                .Where(meeting => meeting.ConversationId == conversationId)
+                .Where(meeting =>
+                    meeting.MeetingAttendances.Any(attendance => attendance.UserId == currentUserId) ||
+                    _context.MeetingInvitations.Any(invitation =>
+                        invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
+                .OrderBy(meeting => meeting.MeetingDate)
+                .ThenBy(meeting => meeting.Id)
+                .ToListAsync();
+
+            return meetings.Select(MeetingMapper.ToResponse).ToList();
+        }
+
         public async Task<List<MeetingResponse>> GetMyInvitationsAsync(string currentUserId)
         {
             var meetings = await MeetingQuery()
@@ -260,9 +293,12 @@ namespace DatingApp.Services
         private IQueryable<Meeting> MeetingQuery()
         {
             return _context.Meetings
+                .AsSplitQuery()
                 .Include(m => m.Location)
                 .Include(m => m.MeetingAttendances)
-                .ThenInclude(ma => ma.User);
+                .ThenInclude(ma => ma.User)
+                .ThenInclude(user => user.HobbyUsers)
+                .ThenInclude(hu => hu.Hobby);
         }
 
         private async Task<MeetingResponse> GetMeetingResponseAsync(int meetingId)

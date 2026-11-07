@@ -73,8 +73,11 @@ namespace DatingApp.Services
                 var otherUserId = otherUserIds[0];
 
                 var existingConversation = await _context.Conversations
+                    .AsSplitQuery()
                     .Include(conversation => conversation.ConversationMembers)
                     .ThenInclude(member => member.User)
+                    .ThenInclude(user => user.HobbyUsers)
+                    .ThenInclude(hu => hu.Hobby)
                     .FirstOrDefaultAsync(conversation =>
                         !conversation.IsGroup &&
                         conversation.ConversationMembers.Count == 2 &&
@@ -131,8 +134,11 @@ namespace DatingApp.Services
             await _context.SaveChangesAsync();
 
             var createdConversation = await _context.Conversations
+                .AsSplitQuery()
                 .Include(savedConversation => savedConversation.ConversationMembers)
                 .ThenInclude(member => member.User)
+                .ThenInclude(user => user.HobbyUsers)
+                .ThenInclude(hu => hu.Hobby)
                 .FirstAsync(savedConversation =>
                     savedConversation.Id == conversation.Id);
 
@@ -147,9 +153,12 @@ namespace DatingApp.Services
                 .ToListAsync();
 
             var conversations = await _context.Conversations
+                .AsSplitQuery()
                 .Where(c => conversationIds.Contains(c.Id))
                 .Include(c => c.ConversationMembers)
                 .ThenInclude(cm => cm.User)
+                .ThenInclude(user => user.HobbyUsers)
+                .ThenInclude(hu => hu.Hobby)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 

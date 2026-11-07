@@ -28,6 +28,28 @@ namespace DatingApp.Controllers
             return Ok(meetings);
         }
 
+        [HttpGet("conversation/{conversationId:int}")]
+        public async Task<IActionResult> GetByConversation(int conversationId)
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+
+            try
+            {
+                var meetings = await _meetingService.GetMeetingsByConversationAsync(
+                    conversationId, currentUserId);
+
+                return Ok(meetings);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+        }
+
         [HttpGet("invitations")]
         public async Task<IActionResult> GetMyInvitations()
         {
