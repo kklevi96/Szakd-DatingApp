@@ -1,4 +1,5 @@
 using DatingApp.Data;
+using DatingApp.Hubs;
 using DatingApp.Models;
 using DatingApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,13 +25,15 @@ namespace DatingApp
 
             builder.Services.AddCors(options =>
             {
-                options.AddDefaultPolicy(
-                    policy =>
-                    {
-                        policy.WithHeaders("*");
-                        policy.WithOrigins("*");
-                        policy.WithMethods("*");
-                    });
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.WithOrigins(
+                            "http://localhost:4200",
+                            "https://localhost:4200")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
             });
 
             builder.Services.AddDefaultIdentity<DatingappUser>(
@@ -64,6 +67,22 @@ namespace DatingApp
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes("nagyonhosszutitkoskodhelye123457890123457890"))
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/hubs/notifications"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             builder.Services.AddAuthorization();
@@ -76,6 +95,7 @@ namespace DatingApp
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IHobbyService, HobbyService>();
             builder.Services.AddControllers();
+            builder.Services.AddSignalR();
             builder.Services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -135,6 +155,7 @@ namespace DatingApp
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
+            app.MapHub<NotificationHub>("/hubs/notifications");
             app.Run();
         }
     }
