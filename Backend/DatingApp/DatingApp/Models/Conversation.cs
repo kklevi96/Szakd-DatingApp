@@ -13,5 +13,7 @@ namespace DatingApp.Models
         public virtual ICollection<Message> Messages { get; set; }
 
         public virtual ICollection<ConversationMember> ConversationMembers { get; set; }
+
+        public virtual ICollection<Meeting> Meetings { get; set; } = new List<Meeting>();
     }
 }

@@ -1,4 +1,5 @@
-﻿using DatingApp.Data;
+﻿using DatingApp.Dtos.Users;
+using DatingApp.Data;
 using DatingApp.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,44 @@ namespace DatingApp.Services
             }
 
             return user;
+        }
+
+        public async Task<UserMeResponse?> GetCurrentUserAsync(ClaimsPrincipal principal)
+        {
+            var user = await _userManager.GetUserAsync(principal);
+
+            if (user == null)
+                return null;
+
+            return new UserMeResponse
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                BirthDay = user.BirthDay,
+                WantsRelationship = user.WantsRelationship,
+                WantsFriendship = user.WantsFriendship,
+                InterestedinWoman = user.InterestedinWoman,
+                InterestedinMan = user.InterestedinMan,
+                Gender = user.Gender,
+                MBTICode = user.MBTICode,
+                Roles = (await _userManager.GetRolesAsync(user)).ToList(),
+                CanRequestAdmin = true
+            };
+        }
+
+        public async Task<IdentityResult?> UpdateSearchPreferencesAsync(
+            ClaimsPrincipal principal, SearchPreferencesRequest request)
+        {
+            var user = await _userManager.GetUserAsync(principal);
+            if (user == null)
+                return null;
+
+            user.WantsRelationship = request.WantsRelationship;
+            user.WantsFriendship = request.WantsFriendship;
+
+            return await _userManager.UpdateAsync(user);
         }
 
         public async Task<List<DatingappUser>> GetAllAsync()

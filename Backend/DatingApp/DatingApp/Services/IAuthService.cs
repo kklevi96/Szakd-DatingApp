@@ -8,8 +8,6 @@ namespace DatingApp.Services
     {
         Task<IdentityResult> RegisterAsync(AuthRegisterRequest request);
         Task<AuthResponse?> LoginAsync(AuthLoginRequest request);
-        Task<UserMeResponse?> GetCurrentUserAsync(ClaimsPrincipal principal);
-        Task<IdentityResult?> UpdateSearchPreferencesAsync(ClaimsPrincipal principal, SearchPreferencesRequest request);
         Task<IdentityResult?> DelegateAdminAsync(ClaimsPrincipal principal, DelegateAdminRequest request);
         Task<IdentityResult?> RemoveAdminAsync(ClaimsPrincipal principal);
     }

@@ -51,7 +51,7 @@ export class AuthService {
   getMe(): Observable<UserMeResponse> {
     const token = this.getToken();
 
-    return this.http.get<UserMeResponse>(`${this.baseUrl}/auth/me`).pipe(
+    return this.http.get<UserMeResponse>(`${this.baseUrl}/users/me`).pipe(
       tap(user => {
         if (this.getToken() === token) {
           this.user.set(user);
@@ -62,7 +62,7 @@ export class AuthService {
 
   updateSearchPreferences(preferences: SearchPreferences): Observable<void> {
     const token = this.getToken();
-    return this.http.patch<void>(this.baseUrl + '/auth/search-preferences', preferences).pipe(
+    return this.http.patch<void>(this.baseUrl + '/users/search-preferences', preferences).pipe(
       tap(() => {
         if (this.getToken() === token) {
           this.user.update(user => user ? { ...user, ...preferences } : null);

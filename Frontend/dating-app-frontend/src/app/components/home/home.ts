@@ -9,7 +9,7 @@ import { finalize } from 'rxjs';
 import { AuthService, UserMeResponse } from '../../core/services/auth-service';
 import { Hobby } from '../../core/models/hobby.models';
 import { HobbyService } from '../../core/services/hobby-service';
-import { HobbyDialog } from '../profile/hobby-dialog/hobby-dialog';
+import { HobbyDialog } from '../hobby/hobby-dialog/hobby-dialog';
 
 @Component({
   selector: 'app-home',

@@ -1,4 +1,4 @@
-﻿namespace DatingApp.Dtos.Auth
+namespace DatingApp.Dtos.Users
 {
     public class UserMeResponse
     {

@@ -6,6 +6,8 @@ using DatingApp.Dtos.Auth;
 using DatingApp.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using DatingApp.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace DatingApp.Services;
 
@@ -14,15 +16,20 @@ public class AuthService : IAuthService
     private readonly UserManager<DatingappUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly DatingAppDbContext _context;
+    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(
-        UserManager<DatingappUser> userManager,
+    public AuthService(UserManager<DatingappUser> userManager,
         RoleManager<IdentityRole> roleManager,
-        DatingAppDbContext context)
+        DatingAppDbContext context,
+        IHubContext<NotificationHub> hubContext,
+        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _context = context;
+        _hubContext = hubContext;
+        _logger = logger;
     }
 
     public async Task<AuthResponse?> LoginAsync(AuthLoginRequest request)
@@ -98,45 +105,36 @@ public class AuthService : IAuthService
             return roleResult;
 
         await transaction.CommitAsync();
-        return result;
-    }
 
-    public async Task<UserMeResponse?> GetCurrentUserAsync(ClaimsPrincipal principal)
-    {
-        var user = await _userManager.GetUserAsync(principal);
-
-        if (user == null)
-            return null;
-
-        return new UserMeResponse
+        if (user.WantsRelationship)
         {
-            Id = user.Id,
-            Email = user.Email ?? string.Empty,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            BirthDay = user.BirthDay,
-            WantsRelationship = user.WantsRelationship,
-            WantsFriendship = user.WantsFriendship,
-            InterestedinWoman = user.InterestedinWoman,
-            InterestedinMan = user.InterestedinMan,
-            Gender = user.Gender,
-            MBTICode = user.MBTICode,
-            Roles = (await _userManager.GetRolesAsync(user)).ToList(),
-            CanRequestAdmin = true
-        };
-    }
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("MatchesChanged");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(
+                    exception,
+                    "The registration succeeded, but the match notification could not be sent.");
+            }
+        }
 
-    public async Task<IdentityResult?> UpdateSearchPreferencesAsync(
-        ClaimsPrincipal principal, SearchPreferencesRequest request)
-    {
-        var user = await _userManager.GetUserAsync(principal);
-        if (user == null)
-            return null;
+        if (user.WantsFriendship)
+        {
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("PotentialFriendsChanged");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(
+                    exception,
+                    "The registration succeeded, but the potential friends notification could not be sent.");
+            }
+        }
 
-        user.WantsRelationship = request.WantsRelationship;
-        user.WantsFriendship = request.WantsFriendship;
-
-        return await _userManager.UpdateAsync(user);
+        return result;
     }
 
     public async Task<IdentityResult?> DelegateAdminAsync(

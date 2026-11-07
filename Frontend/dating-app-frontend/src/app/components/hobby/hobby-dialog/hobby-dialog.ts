@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { Hobby } from '../../hobby/hobby';
+import { Hobby } from '../hobby';
 
 @Component({
   selector: 'app-hobby-dialog',

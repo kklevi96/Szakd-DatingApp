@@ -79,6 +79,12 @@ namespace DatingApp.Data
                 .HasForeignKey(m => m.LocationId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Meeting>()
+                .HasOne(meeting => meeting.Conversation)
+                .WithMany(conversation => conversation.Meetings)
+                .HasForeignKey(meeting => meeting.ConversationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<HobbyUser>()
                 .HasOne(hu => hu.Hobby)
                 .WithMany(h => h.HobbyUsers)

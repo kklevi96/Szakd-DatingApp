@@ -10,10 +10,12 @@ namespace DatingApp.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, IUserService userService)
         {
             _authService = authService;
+            _userService = userService;
         }
 
         [HttpPost("register")]
@@ -37,31 +39,6 @@ namespace DatingApp.Controllers
                 return Unauthorized();
 
             return Ok(result);
-        }
-
-        [Authorize]
-        [HttpGet("me")]
-        public async Task<IActionResult> Me()
-        {
-            var result = await _authService.GetCurrentUserAsync(User);
-
-            if (result == null)
-                return Unauthorized();
-
-            return Ok(result);
-        }
-
-        [Authorize]
-        [HttpPatch("search-preferences")]
-        public async Task<IActionResult> UpdateSearchPreferences(SearchPreferencesRequest request)
-        {
-            var result = await _authService.UpdateSearchPreferencesAsync(User, request);
-            if (result == null)
-                return Unauthorized();
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-
-            return NoContent();
         }
 
         [Authorize]
@@ -102,7 +79,7 @@ namespace DatingApp.Controllers
         [HttpGet("Admin")]
         public async Task<IActionResult> Admin()
         {
-            var user = await _authService.GetCurrentUserAsync(User);
+            var user = await _userService.GetCurrentUserAsync(User);
             if (user == null)
                 return Unauthorized();
 

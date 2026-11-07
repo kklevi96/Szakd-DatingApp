@@ -57,7 +57,7 @@ export class Login {
       .subscribe({
         next: () => {
 
-          this.snackBar.open('Sikeres bejelentkezés!', 'Bezárás', {
+          this.snackBar.open('Login successful', 'Close', {
             duration: 3000,
           });
           void this.router.navigateByUrl('/home');
