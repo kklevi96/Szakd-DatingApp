@@ -1,5 +1,7 @@
 ﻿using DatingApp.Dtos.Users;
 using DatingApp.Data;
+using DatingApp.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using DatingApp.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +13,19 @@ namespace DatingApp.Services
     {
         private readonly UserManager<DatingappUser> _userManager;
         private readonly DatingAppDbContext _context;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<UserService> _logger;
 
-        public UserService(UserManager<DatingappUser> userManager, DatingAppDbContext context)
+        public UserService(
+            UserManager<DatingappUser> userManager,
+            DatingAppDbContext context,
+            IHubContext<NotificationHub> hubContext,
+            ILogger<UserService> logger)
         {
             _userManager = userManager;
             _context = context;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         public string GetCurrentUserId(ClaimsPrincipal principal)
@@ -74,10 +84,27 @@ namespace DatingApp.Services
             if (user == null)
                 return null;
 
+            var relationshipChanged = user.WantsRelationship != request.WantsRelationship;
+
             user.WantsRelationship = request.WantsRelationship;
             user.WantsFriendship = request.WantsFriendship;
 
-            return await _userManager.UpdateAsync(user);
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded && relationshipChanged)
+            {
+                try
+                {
+                    await _hubContext.Clients.All.SendAsync("MatchesChanged");
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogWarning(exception,
+                        "Search preferences were saved, but the match notification could not be sent.");
+                }
+            }
+
+            return result;
         }
 
         public async Task<List<DatingappUser>> GetAllAsync()

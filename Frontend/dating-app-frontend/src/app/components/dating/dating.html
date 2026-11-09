@@ -11,6 +11,11 @@
     </mat-slide-toggle>
     @if (isSaving()) { <span role="status">Saving...</span> }
   </section>
+  <p class="live-status" role="status">
+    @if (signalRService.connectionState() !== 'connected') {
+      SignalR error..
+    }
+  </p>
   @if (errorMessage()) {
     <div class="error-panel" role="alert">
       <p>{{ errorMessage() }}</p>
@@ -18,7 +23,7 @@
               (click)="loadProfile()">Try again</button>
     </div>
   }
-  @if (isLoadingProfile()) {
+  @if (isLoadingProfile() && !user()) {
     <p role="status">Loading your profile...</p>
   } @else if (user(); as currentUser) {
     @if (!wantsRelationship()) {
@@ -35,14 +40,13 @@
           <p>Your MBTI code: <strong>{{ currentUser.mbtiCode }}</strong></p>
           <p>Shared hobbies are highlighted in blue.</p>
         </div>
-        <button mat-stroked-button type="button"
-                [disabled]="isLoadingMatches() || isSaving()" (click)="loadProfile()">
-          <mat-icon>refresh</mat-icon> Refresh matches
-        </button>
+        @if ((isLoadingProfile() || isLoadingMatches()) && cards().length > 0) {
+          <p role="status">Updating matches...</p>
+        }
       </div>
-      @if (isLoadingMatches()) {
+      @if (isLoadingMatches() && cards().length === 0) {
         <p role="status">Finding your matches...</p>
-      } @else if (!errorMessage() && cards().length === 0 && !isSaving()) {
+      } @else if (!errorMessage() && cards().length === 0 && !isSaving() && !isLoadingProfile()) {
         <div class="empty-panel">
           <h3>No matches yet</h3>
           <p>No users currently match your dating preferences and MBTI range.</p>

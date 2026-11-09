@@ -1,6 +1,8 @@
 ﻿using DatingApp.Data;
 using DatingApp.Dtos.Hobbies;
 using DatingApp.Models;
+using DatingApp.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DatingApp.Services
@@ -8,10 +10,14 @@ namespace DatingApp.Services
     public class HobbyService : IHobbyService
     {
         private readonly DatingAppDbContext _context;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<HobbyService> _logger;
 
-        public HobbyService(DatingAppDbContext context)
+        public HobbyService(DatingAppDbContext context, IHubContext<NotificationHub> hubContext, ILogger<HobbyService> logger)
         {
             _context = context;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         public async Task<List<HobbyResponse>> GetAllHobbiesAsync()
@@ -63,6 +69,7 @@ namespace DatingApp.Services
             });
 
             await _context.SaveChangesAsync();
+            await NotifyMatchesChangedAsync();
 
             return true;
         }
@@ -79,8 +86,22 @@ namespace DatingApp.Services
 
             _context.HobbyUsers.Remove(hobbyUser);
             await _context.SaveChangesAsync();
+            await NotifyMatchesChangedAsync();
 
             return true;
+        }
+
+        private async Task NotifyMatchesChangedAsync()
+        {
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("MatchesChanged");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception,
+                    "Hobbies were saved, but the match notification could not be sent.");
+            }
         }
     }
 }
