@@ -5,7 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { finalize, Subscription, switchMap } from 'rxjs';
+import { auditTime, finalize, Subscription, switchMap } from 'rxjs';
 import { AuthService, UserMeResponse } from '../../core/services/auth-service';
 import { HobbyService } from '../../core/services/hobby-service';
 import { CompatibilityService } from '../../core/services/compatibility-service';
@@ -35,6 +35,7 @@ export class Dating implements OnInit {
   errorMessage = signal('');
   private profileRequest?: Subscription;
   private matchesRequest?: Subscription;
+  private refreshPending = false;
 
   constructor(
     private auth: AuthService,
@@ -64,7 +65,10 @@ export class Dating implements OnInit {
 
     this.profileRequest = this.auth.getMe().pipe(
       takeUntilDestroyed(this.destroyRef),
-      finalize(() => this.isLoadingProfile.set(false)),
+      finalize(() => {
+        this.isLoadingProfile.set(false);
+        this.runPendingRefresh();
+      }),
     ).subscribe({
       next: user => {
         if (this.auth.getToken() !== token) { return; }
@@ -97,7 +101,10 @@ export class Dating implements OnInit {
       wantsFriendship: user.wantsFriendship,
     }).pipe(
       takeUntilDestroyed(this.destroyRef),
-      finalize(() => this.isSaving.set(false)),
+      finalize(() => {
+        this.isSaving.set(false);
+        this.runPendingRefresh();
+      }),
     ).subscribe({
       next: () => {
         if (this.auth.getToken() === token) { this.loadProfile(true); }
@@ -128,7 +135,10 @@ export class Dating implements OnInit {
       }),
       switchMap(() => this.compatibility.getMy()),
       takeUntilDestroyed(this.destroyRef),
-      finalize(() => this.isLoadingMatches.set(false)),
+      finalize(() => {
+        this.isLoadingMatches.set(false);
+        this.runPendingRefresh();
+      }),
     ).subscribe({
       next: matches => {
         if (this.auth.getToken() !== token) { return; }
@@ -150,5 +160,25 @@ export class Dating implements OnInit {
         }
       },
     });
+  }
+
+  private refreshFromNotification(): void {
+    if (this.destroyRef.destroyed || !this.auth.getToken()) { return; }
+
+    if (this.isLoadingProfile() || this.isLoadingMatches() || this.isSaving()) {
+      this.refreshPending = true;
+      return;
+    }
+
+    this.loadProfile(true);
+  }
+
+  private runPendingRefresh(): void {
+    if (!this.refreshPending || this.isLoadingProfile() || this.isLoadingMatches() || this.isSaving()) {
+      return;
+    }
+
+    this.refreshPending = false;
+    this.refreshFromNotification();
   }
 }
