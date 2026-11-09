@@ -1,7 +1,9 @@
 ﻿using DatingApp.Data;
 using DatingApp.Dtos.Messages;
+using DatingApp.Hubs;
 using DatingApp.Mappers;
 using DatingApp.Models;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DatingApp.Services
@@ -10,11 +12,15 @@ namespace DatingApp.Services
     {
         private readonly DatingAppDbContext _context;
         private readonly IUserService _userService;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<MessageService> _logger;
 
-        public MessageService(DatingAppDbContext context, IUserService userService)
+        public MessageService(DatingAppDbContext context, IUserService userService, IHubContext<NotificationHub> hubContext, ILogger<MessageService> logger)
         {
             _context = context;
             _userService = userService;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         public async Task<MessageResponse> SendMessageAsync(string currentUserId, SendMessageRequest request)
@@ -39,6 +45,8 @@ namespace DatingApp.Services
 
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
+
+            await NotifyMessagesChangedAsync(message.ConversationId);
 
             return new MessageResponse
             {
@@ -76,6 +84,27 @@ namespace DatingApp.Services
                 CreatedAt = m.CreatedAt,
                 Sender = UserMapper.ToResponse(m.Sender)
             }).ToList();
+        }
+
+        private async Task NotifyMessagesChangedAsync(int conversationId)
+        {
+            try
+            {
+                var memberIds = await _context.ConversationMembers
+                    .Where(cm => cm.ConversationId == conversationId)
+                    .Select(cm => cm.UserId)
+                    .ToListAsync();
+
+                await _hubContext.Clients.Users(memberIds)
+                    .SendAsync("MessagesChanged", conversationId);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(
+                    exception,
+                    "Message saved, the notification sending error in conversation: {ConversationId}.",
+                    conversationId);
+            }
         }
     }
 }

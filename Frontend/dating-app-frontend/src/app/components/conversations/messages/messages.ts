@@ -5,11 +5,12 @@ import {
   ElementRef,
   Injector,
   Input,
-  OnChanges,
+  OnChanges, OnInit,
   signal,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
+import { SignalRService } from '../../../core/services/signalr.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { finalize, Subscription } from 'rxjs';
@@ -41,7 +42,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   templateUrl: './messages.html',
   styleUrl: './messages.scss',
 })
-export class Messages implements OnChanges {
+export class Messages implements OnChanges, OnInit {
   @Input({ required: true }) conversationId = 0;
 
   messages = signal<Message[]>([]);
@@ -61,7 +62,25 @@ export class Messages implements OnChanges {
     private injector: Injector,
     public auth: AuthService,
     private snackBar: MatSnackBar,
+    private signalRService: SignalRService,
   ) {}
+
+  ngOnInit(): void {
+    this.signalRService.messagesChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(conversationId => {
+        if (!this.auth.getToken()) {
+          return;
+        }
+
+        if (
+          conversationId === null ||
+          conversationId === this.conversationId
+        ) {
+          this.getMessages();
+        }
+      });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['conversationId']) {
