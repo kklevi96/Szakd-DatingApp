@@ -1,1 +1,79 @@
-<p>conversations works!</p>
+<div
+  class="conversation-layout"
+  [class.has-selection]="selectedConversation() !== null">
+  <section class="conversations-page">
+    <h1>Conversations</h1>
+
+    @if (isLoading()) {
+      <mat-spinner
+        [diameter]="40"
+        aria-label="Loading conversations">
+      </mat-spinner>
+    } @else if (errorMessage()) {
+      <p role="alert">{{ errorMessage() }}</p>
+
+      <button mat-button type="button" (click)="getConversations()">
+        Try again
+      </button>
+    } @else {
+      <mat-action-list aria-label="Conversations">
+        @for (conversation of conversations(); track conversation.id) {
+          <button
+            mat-list-item
+            type="button"
+            class="conversation-row"
+            [class.selected]="selectedConversation()?.id === conversation.id"
+            [attr.aria-pressed]="selectedConversation()?.id === conversation.id"
+            (click)="selectConversation(conversation)">
+
+          <span
+            matListItemAvatar
+            class="conversation-avatar"
+            aria-hidden="true">
+            {{ getConversationName(conversation).charAt(0) }}
+          </span>
+
+            <span matListItemTitle class="conversation-name">
+            {{ getConversationName(conversation) }}
+          </span>
+
+            <span matListItemLine>
+            @if (conversation.isGroup) {
+              @for (member of conversation.members; track member.id; let last = $last) {
+                {{ member.firstName }}@if (!last) {
+                  ,
+                }
+              }
+            } @else {
+              Direct conversation
+            }
+          </span>
+          </button>
+        } @empty {
+          <p>No conversations yet.</p>
+        }
+      </mat-action-list>
+    }
+  </section>
+  <section class="messages-panel">
+    @if (selectedConversation(); as conversation) {
+      <header class="conversation-header">
+        <button
+          mat-button
+          type="button"
+          class="back-button"
+          (click)="selectedConversation.set(null)">
+          Back
+        </button>
+
+        <h2>{{ getConversationName(conversation) }}</h2>
+      </header>
+
+      <app-messages
+        [conversationId]="conversation.id">
+      </app-messages>
+    } @else {
+      <p>Select a conversation to view messages.</p>
+    }
+  </section>
+</div>

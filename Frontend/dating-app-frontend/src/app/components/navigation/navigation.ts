@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth-service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Functions } from './functions/functions';
 
 @Component({
   selector: 'app-navigation',
@@ -14,6 +15,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
+    Functions,
   ],
   templateUrl: './navigation.html',
   styleUrl: './navigation.scss',

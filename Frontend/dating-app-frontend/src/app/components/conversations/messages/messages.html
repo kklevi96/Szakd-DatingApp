@@ -1,1 +1,66 @@
-<p>messages works!</p>
+<div class="message-list" #messageList>
+  @if (isLoading() && messages().length === 0) {
+    <mat-spinner
+      [diameter]="40"
+      aria-label="Loading messages">
+    </mat-spinner>
+  } @else if (errorMessage()) {
+    <p role="alert">{{ errorMessage() }}</p>
+
+    <button mat-button type="button" (click)="getMessages()">
+      Try again
+    </button>
+  } @else {
+    <div class="message-stack">
+      @for (message of messages(); track message.id) {
+        @let own = message.senderUserId === auth.currentUser()?.id;
+
+        <article class="message-row" [class.own]="own">
+          @if (!own) {
+            <span class="message-avatar" aria-hidden="true">
+              {{ (message.sender?.firstName || '?').charAt(0) }}
+            </span>
+          }
+
+          <div class="message-content">
+            <div class="message-info">
+              @if (!own) {
+                <span>{{ message.sender?.firstName || 'Unknown user' }}</span>
+              }
+
+              <time [attr.datetime]="message.createdAt">
+                {{ message.createdAt | date:'yyyy.MM.dd. HH:mm:ss' }}
+              </time>
+            </div>
+
+            <mat-card appearance="outlined" class="message-bubble">{{ message.content }}</mat-card>
+          </div>
+        </article>
+      } @empty {
+        <p>No messages yet.</p>
+      }
+    </div>
+  }
+</div>
+
+<form class="message-composer" (ngSubmit)="sendMessage()">
+  <mat-form-field appearance="outline">
+    <mat-label>Message</mat-label>
+    <input
+      matInput
+      type="text"
+      name="content"
+      [(ngModel)]="newMessage.content"
+      [disabled]="isLoading() || isSending() || !!errorMessage()"
+      autocomplete="off"
+      required>
+  </mat-form-field>
+
+  <button
+    mat-flat-button
+    type="submit"
+    aria-label="Send message"
+    [disabled]="isLoading() || isSending() || !!errorMessage() || !newMessage.content.trim()">
+    <mat-icon>send</mat-icon>
+  </button>
+</form>

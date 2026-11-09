@@ -1,0 +1,55 @@
+:host {
+  display: block;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  color: #64748b;
+  border-bottom: 3px solid transparent;
+  border-radius: 8px 8px 0 0;
+  text-decoration: none;
+  transition: background-color 160ms, color 160ms;
+}
+
+a:hover {
+  color: #db2777;
+  background: #f8fafc;
+}
+
+a:focus-visible {
+  outline: 2px solid #db2777;
+  outline-offset: -4px;
+}
+
+a.active-link {
+  color: #db2777;
+  background: #fff1f2;
+  border-bottom-color: currentColor;
+}
+
+mat-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 26px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a {
+    transition: none;
+  }
+}
