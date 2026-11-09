@@ -72,7 +72,7 @@ export class Dating implements OnInit {
     }
 
     this.errorMessage.set('');
-    this.isLoadingProfile.set(true);
+    this.isLoadingProfile.set(!this.user());
 
     const token = this.auth.getToken();
 
@@ -117,6 +117,7 @@ export class Dating implements OnInit {
     const previousCards = this.cards();
     const token = this.auth.getToken();
 
+    this.profileRequest?.unsubscribe();
     this.matchesRequest?.unsubscribe();
     this.isSaving.set(true);
     this.wantsRelationship.set(enabled);
