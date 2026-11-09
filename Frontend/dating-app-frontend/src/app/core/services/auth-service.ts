@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { DestroyRef, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -26,9 +26,27 @@ export interface UserMeResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, destroyRef: DestroyRef) {
+    const onStorage = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage || (event.key !== 'token' && event.key !== null)) {
+        return;
+      }
+
+      const token = this.getToken();
+      if (token === this.token()) { return; }
+      this.user.set(null);
+      this.loggedIn.set(Boolean(token));
+      sessionStorage.removeItem('hobbiesChecked');
+      this.token.set(token);
+    };
+
+    window.addEventListener('storage', onStorage);
+    destroyRef.onDestroy(() => window.removeEventListener('storage', onStorage));
+  }
 
   private baseUrl = environment.apiUrl;
+  private token = signal(this.getToken());
+  readonly currentToken = this.token.asReadonly();
 
   private loggedIn = signal(Boolean(this.getToken()));
 
@@ -95,6 +113,7 @@ export class AuthService {
     sessionStorage.removeItem('hobbiesChecked');
     this.user.set(null);
     this.loggedIn.set(true);
+    this.token.set(token);
   }
 
   getToken(): string | null {
@@ -114,5 +133,6 @@ export class AuthService {
     sessionStorage.removeItem('hobbiesChecked');
     this.user.set(null);
     this.loggedIn.set(false);
+    this.token.set(null);
   }
 }

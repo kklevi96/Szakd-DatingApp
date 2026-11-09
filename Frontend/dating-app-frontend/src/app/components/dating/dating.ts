@@ -11,6 +11,7 @@ import { HobbyService } from '../../core/services/hobby-service';
 import { CompatibilityService } from '../../core/services/compatibility-service';
 import { CompatibleUser } from '../../core/models/compatibility.models';
 import { Hobby } from '../../core/models/hobby.models';
+import { SignalRService } from '../../core/services/signalr.service';
 
 interface DatingCard {
   user: CompatibleUser;
@@ -32,6 +33,7 @@ export class Dating implements OnInit {
   isLoadingMatches = signal(false);
   isSaving = signal(false);
   errorMessage = signal('');
+  private profileRequest?: Subscription;
   private matchesRequest?: Subscription;
 
   constructor(
@@ -39,40 +41,57 @@ export class Dating implements OnInit {
     private hobbies: HobbyService,
     private compatibility: CompatibilityService,
     private destroyRef: DestroyRef,
+    public signalRService: SignalRService,
   ) {}
 
   ngOnInit(): void {
+    this.signalRService.matchesChanged$.pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => {
+      if (!this.isSaving() && this.auth.getToken()) { this.loadProfile(true); }
+    });
+
     this.loadProfile();
   }
 
-  loadProfile(): void {
+  loadProfile(keepCards = false): void {
+    this.profileRequest?.unsubscribe();
     this.matchesRequest?.unsubscribe();
-    this.cards.set([]);
+    if (!keepCards) { this.cards.set([]); }
     this.errorMessage.set('');
     this.isLoadingProfile.set(true);
-    this.auth.getMe().pipe(
+    const token = this.auth.getToken();
+
+    this.profileRequest = this.auth.getMe().pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.isLoadingProfile.set(false)),
     ).subscribe({
       next: user => {
+        if (this.auth.getToken() !== token) { return; }
         this.user.set(user);
         this.wantsRelationship.set(user.wantsRelationship);
-        if (user.wantsRelationship) { this.loadMatches(); }
+        if (user.wantsRelationship) { this.loadMatches(keepCards); }
+        else { this.cards.set([]); }
       },
-      error: () => this.errorMessage.set('Your profile could not be loaded. Please try again.'),
+      error: () => {
+        if (this.auth.getToken() === token) {
+          this.errorMessage.set('Your profile could not be loaded. Please try again.');
+        }
+      },
     });
   }
 
   setDatingEnabled(enabled: boolean): void {
     const user = this.user();
     if (!user || this.isSaving() || this.isLoadingProfile()) { return; }
-    const previous = user.wantsRelationship;
     const previousCards = this.cards();
+    const token = this.auth.getToken();
     this.matchesRequest?.unsubscribe();
+    this.isSaving.set(true);
     this.wantsRelationship.set(enabled);
     this.cards.set([]);
     this.errorMessage.set('');
-    this.isSaving.set(true);
+
     this.auth.updateSearchPreferences({
       wantsRelationship: enabled,
       wantsFriendship: user.wantsFriendship,
@@ -81,25 +100,27 @@ export class Dating implements OnInit {
       finalize(() => this.isSaving.set(false)),
     ).subscribe({
       next: () => {
-        this.user.set({ ...user, wantsRelationship: enabled });
-        if (enabled) { this.loadMatches(); }
+        if (this.auth.getToken() === token) { this.loadProfile(true); }
       },
       error: () => {
-        this.wantsRelationship.set(previous);
+        if (this.auth.getToken() !== token) { return; }
+        this.wantsRelationship.set(user.wantsRelationship);
         this.cards.set(previousCards);
+        this.loadProfile(true);
         this.errorMessage.set('Your dating preference could not be saved. Please try again.');
       },
     });
   }
 
-  loadMatches(): void {
+  loadMatches(keepCards = false): void {
     const user = this.user();
     this.matchesRequest?.unsubscribe();
     if (!user || !this.wantsRelationship()) { return; }
-    this.cards.set([]);
-    this.errorMessage.set('');
+    if (!keepCards) { this.cards.set([]); }
     this.isLoadingMatches.set(true);
     let myHobbyIds = new Set<number>();
+    const token = this.auth.getToken();
+
     this.matchesRequest = this.hobbies.getMy().pipe(
       switchMap(hobbies => {
         myHobbyIds = new Set(hobbies.map(hobby => hobby.id));
@@ -110,6 +131,7 @@ export class Dating implements OnInit {
       finalize(() => this.isLoadingMatches.set(false)),
     ).subscribe({
       next: matches => {
+        if (this.auth.getToken() !== token) { return; }
         const people = matches
           .map(match => match.userId_A === user.id ? match.userB : match.userA)
           .filter((person): person is CompatibleUser => person != null && person.id !== user.id);
@@ -122,7 +144,11 @@ export class Dating implements OnInit {
           .filter(card => card.difference <= 3)
           .sort((a, b) => a.difference - b.difference || a.user.firstName.localeCompare(b.user.firstName, 'hu')));
       },
-      error: () => this.errorMessage.set('Matches could not be loaded. Please try again.'),
+      error: () => {
+        if (this.auth.getToken() === token) {
+          this.errorMessage.set('Matches could not be loaded. Please try again.');
+        }
+      },
     });
   }
 }

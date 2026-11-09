@@ -19,7 +19,8 @@ public class AuthService : IAuthService
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<AuthService> _logger;
 
-    public AuthService(UserManager<DatingappUser> userManager,
+    public AuthService(
+        UserManager<DatingappUser> userManager,
         RoleManager<IdentityRole> roleManager,
         DatingAppDbContext context,
         IHubContext<NotificationHub> hubContext,
