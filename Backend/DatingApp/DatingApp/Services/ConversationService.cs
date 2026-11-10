@@ -91,6 +91,11 @@ namespace DatingApp.Services
                     return ConversationMapper.ToResponse(existingConversation);
                 }
 
+                var currentUser = await _userService.GetByIdAsync(currentUserId);
+                var otherUser = await _userService.GetByIdAsync(otherUserId);
+
+                var friendshipCompatibleTwo = currentUser.WantsFriendship && otherUser.WantsFriendship;
+
                 var compatible = await _context.Compatibilities
                     .AnyAsync(compatibility =>
                         ((compatibility.UserId_A == currentUserId &&
@@ -104,7 +109,7 @@ namespace DatingApp.Services
                         ((compatibility.UserB.Gender == "male" && compatibility.UserA.InterestedinMan) ||
                          (compatibility.UserB.Gender == "female" && compatibility.UserA.InterestedinWoman)));
 
-                if (!compatible)
+                if (!compatible && !friendshipCompatibleTwo)
                 {
                     throw new ArgumentException(
                         "You can only create a direct conversation with a compatible user.");
