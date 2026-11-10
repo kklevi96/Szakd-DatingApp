@@ -10,6 +10,7 @@ namespace DatingApp.Services
         Task<List<MeetingResponse>> GetMeetingsByConversationAsync(int conversationId, string currentUserId);
         Task<List<MeetingResponse>> GetMyInvitationsAsync(string currentUserId);
         Task<bool> JoinMeetingAsync(int meetingId, string currentUserId);
+        Task<bool> DeclineInvitationAsync(int meetingId, string currentUserId);
         Task<bool> LeaveMeetingAsync(int meetingId, string currentUserId);
         Task<bool> DeleteMeetingAsync(int meetingId, string currentUserId);
     }

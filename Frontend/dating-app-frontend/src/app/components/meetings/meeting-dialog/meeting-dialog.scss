@@ -1,0 +1,13 @@
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.error-message {
+  color: var(--mat-sys-error);
+}

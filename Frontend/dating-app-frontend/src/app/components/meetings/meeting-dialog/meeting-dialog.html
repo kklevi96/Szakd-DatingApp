@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>Invite to a meeting</h2>
+<form #meetingForm="ngForm" (ngSubmit)="sendInvitation(meetingForm)">
+  <mat-dialog-content>
+    @if (data.recipientNames?.length) {
+      <p>Invite: {{ data.recipientNames?.join(', ') }}</p>
+    } @else {
+      <p>All other conversation members will receive an invitation.</p>
+    }
+    @if (isLoading()) {
+      <p>Loading locations...</p>
+    }
+    <mat-form-field appearance="outline">
+      <mat-label>Location</mat-label>
+      <mat-select name="locationId" [(ngModel)]="locationId" required [disabled]="isLoading() || isSaving()">
+        @for (location of locations(); track location.id) {
+          <mat-option [value]="location.id">{{ location.name }} — {{ location.address }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>Please select a location.</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Date and time</mat-label>
+      <input matInput type="datetime-local" name="meetingDate" [(ngModel)]="meetingDate"
+        [min]="minDate" required [disabled]="isSaving()">
+      <mat-error>Please select a date and time.</mat-error>
+    </mat-form-field>
+    @if (!isLoading() && locations().length === 0 && !errorMessage()) {
+      <p>No locations are available yet.</p>
+    }
+    @if (errorMessage()) {
+      <p class="error-message" role="alert">{{ errorMessage() }}</p>
+      @if (locations().length === 0) {
+        <button mat-button type="button" (click)="loadLocations()">Try again</button>
+      }
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" [disabled]="isSaving()" (click)="dialogRef.close()">Cancel</button>
+    <button mat-flat-button type="submit"
+      [disabled]="isLoading() || isSaving() || meetingForm.invalid || locations().length === 0">
+      {{ isSaving() ? 'Sending...' : 'Send invitation' }}
+    </button>
+  </mat-dialog-actions>
+</form>

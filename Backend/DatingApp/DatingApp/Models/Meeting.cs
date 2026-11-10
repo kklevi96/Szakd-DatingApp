@@ -9,6 +9,8 @@
 
         public virtual ICollection<MeetingAttendance> MeetingAttendances { get; set; } = new List<MeetingAttendance>();
 
+        public virtual ICollection<MeetingInvitation> MeetingInvitations { get; set; } = new List<MeetingInvitation>();
+
         public int ConversationId { get; set; }
 
         public virtual Conversation? Conversation { get; set; }

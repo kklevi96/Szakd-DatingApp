@@ -16,6 +16,9 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ConversationService } from '../../core/services/conversation-service';
 import { CreateConversationRequest } from '../../core/models/conversation.models';
+import { MatDialog } from '@angular/material/dialog';
+import { MeetingDialog } from '../meetings/meeting-dialog/meeting-dialog';
+import { Meeting, MeetingDialogData } from '../../core/models/meeting.models';
 
 interface DatingCard {
   user: CompatibleUser;
@@ -56,6 +59,7 @@ export class Dating implements OnInit {
     public signalRService: SignalRService,
     private conversationService: ConversationService,
     private router: Router,
+    private dialog: MatDialog,
   ) { }
 
   ngOnInit(): void {
@@ -159,6 +163,24 @@ export class Dating implements OnInit {
           );
         },
       });
+  }
+
+  inviteToMeeting(otherUserId: string): void {
+    if (this.openingUserId() !== null || this.isSaving()) { return; }
+    const token = this.auth.getToken();
+    if (!token) { return; }
+    const person = this.cards().find(card => card.user.id === otherUserId)?.user;
+    if (!person) { return; }
+    this.dialog.open<MeetingDialog, MeetingDialogData, Meeting>(MeetingDialog, {
+      width: '480px', maxWidth: 'calc(100vw - 24px)',
+      data: { otherUserIds: [otherUserId], recipientNames: [person.firstName] },
+    }).afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(meeting => {
+      if (meeting && this.auth.getToken() === token) {
+        void this.router.navigate(['/conversations'], {
+          queryParams: { conversationId: meeting.conversationId, invitations: true },
+        });
+      }
+    });
   }
 
   openConversation(otherUserId: string): void {

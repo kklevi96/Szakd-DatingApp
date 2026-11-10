@@ -24,6 +24,9 @@ export class SignalRService implements OnDestroy {
   private potentialFriendsChanged = new Subject<void>();
   readonly potentialFriendsChanged$ = this.potentialFriendsChanged.asObservable();
 
+  private meetingsChanged = new Subject<number | null>();
+  readonly meetingsChanged$ = this.meetingsChanged.asObservable();
+
   private conversationsChanged = new Subject<void>();
   readonly conversationsChanged$ = this.conversationsChanged.asObservable();
 
@@ -52,6 +55,7 @@ export class SignalRService implements OnDestroy {
     this.addMessagesListener();
     this.addConversationRenamedListener();
     this.addConversationsListener();
+    this.addMeetingsListener();
 
     this.handleDisconnects();
     this.connect(this.hubConnection);
@@ -128,6 +132,17 @@ export class SignalRService implements OnDestroy {
     });
   };
 
+  public addMeetingsListener = (): void => {
+    const connection = this.hubConnection;
+    if (!connection) { return; }
+    connection.off('MeetingsChanged');
+    connection.on('MeetingsChanged', (conversationId: number) => {
+      if (this.hubConnection === connection) {
+        this.meetingsChanged.next(conversationId);
+      }
+    });
+  };
+
   public handleDisconnects = (): void => {
     const connection = this.hubConnection;
     if (!connection || this.disconnectsFor === connection) {
@@ -150,6 +165,7 @@ export class SignalRService implements OnDestroy {
       this.potentialFriendsChanged.next();
       this.messagesChanged.next(null);
       this.conversationsChanged.next();
+      this.meetingsChanged.next(null);
     });
 
     connection.onclose(() => {
@@ -196,6 +212,7 @@ export class SignalRService implements OnDestroy {
         this.potentialFriendsChanged.next();
         this.messagesChanged.next(null);
         this.conversationsChanged.next();
+        this.meetingsChanged.next(null);
       })
       .catch(() => {
         if (this.hubConnection !== connection) {
@@ -231,5 +248,6 @@ export class SignalRService implements OnDestroy {
     this.messagesChanged.complete();
     this.conversationRenamed.complete();
     this.conversationsChanged.complete();
+    this.meetingsChanged.complete();
   }
 }

@@ -24,6 +24,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   background: white;
+  transition: background-color 150ms ease;
 
   mat-card-header,
   mat-card-content,
@@ -119,7 +120,14 @@
   margin-right: 4px;
 }
 
+@media (hover: hover) {
+  .profile-card:hover {
+    background: #fff7fa;
+  }
+}
+
 .profile-card.selected {
+  background: #ffeaf2;
   border-color: var(--mat-sys-primary);
   box-shadow: 0 0 0 1px var(--mat-sys-primary);
 }

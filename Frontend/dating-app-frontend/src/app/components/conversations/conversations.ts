@@ -81,6 +81,14 @@ export class Conversations implements OnInit {
         }
       });
 
+    this.signalRService.messagesChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(conversationId => {
+        if (conversationId !== null && this.auth.getToken()) {
+          this.getConversations(true);
+        }
+      });
+
     this.signalRService.conversationRenamed$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(change => {
@@ -241,7 +249,7 @@ export class Conversations implements OnInit {
     this.cancelRenaming();
     const id = Number(this.route.snapshot.queryParamMap.get('conversationId'));
     const conversation = this.conversations().find(item => item.id === id);
-    this.showInvitations.set(false);
+    this.showInvitations.set(this.route.snapshot.queryParamMap.get('invitations') === 'true');
     this.selectedConversation.set(conversation ?? null);
   }
 

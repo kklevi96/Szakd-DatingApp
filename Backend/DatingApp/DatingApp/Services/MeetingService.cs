@@ -3,6 +3,8 @@ using DatingApp.Dtos.Conversations;
 using DatingApp.Dtos.Meetings;
 using DatingApp.Mappers;
 using DatingApp.Models;
+using DatingApp.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DatingApp.Services
@@ -11,11 +13,16 @@ namespace DatingApp.Services
     {
         private readonly DatingAppDbContext _context;
         private readonly IConversationService _conversationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<MeetingService> _logger;
 
-        public MeetingService(DatingAppDbContext context, IConversationService conversationService)
+        public MeetingService(DatingAppDbContext context, IConversationService conversationService,
+            IHubContext<NotificationHub> hubContext, ILogger<MeetingService> logger)
         {
             _context = context;
             _conversationService = conversationService;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         public async Task<MeetingResponse> CreateMeetingAsync(string currentUserId, CreateMeetingRequest request)
@@ -80,16 +87,17 @@ namespace DatingApp.Services
             if (!request.ConversationId.HasValue)
                 await _conversationService.NotifyConversationsChangedAsync(conversationId);
 
+            await NotifyMeetingsChangedAsync(conversationId);
+
             return await GetMeetingResponseAsync(meeting.Id);
         }
 
         public async Task<MeetingResponse?> GetMeetingByIdAsync(int id, string currentUserId)
         {
             var meeting = await MeetingQuery()
-                .Where(meeting =>
-                    meeting.MeetingAttendances.Any(attendance => attendance.UserId == currentUserId) ||
-                    _context.MeetingInvitations.Any(invitation =>
-                        invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
+                .Where(meeting => meeting.MeetingAttendances.Any() &&
+                    _context.ConversationMembers.Any(member =>
+                        member.ConversationId == meeting.ConversationId && member.UserId == currentUserId))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             return meeting == null ? null : MeetingMapper.ToResponse(meeting);
@@ -126,11 +134,7 @@ namespace DatingApp.Services
             }
 
             var meetings = await MeetingQuery()
-                .Where(meeting => meeting.ConversationId == conversationId)
-                .Where(meeting =>
-                    meeting.MeetingAttendances.Any(attendance => attendance.UserId == currentUserId) ||
-                    _context.MeetingInvitations.Any(invitation =>
-                        invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
+                .Where(meeting => meeting.ConversationId == conversationId && meeting.MeetingAttendances.Any())
                 .OrderBy(meeting => meeting.MeetingDate)
                 .ThenBy(meeting => meeting.Id)
                 .ToListAsync();
@@ -151,13 +155,21 @@ namespace DatingApp.Services
 
         public async Task<bool> JoinMeetingAsync(int meetingId, string currentUserId)
         {
-            var meetingExists = await _context.Meetings
-                .AnyAsync(meeting => meeting.Id == meetingId);
+            var conversationId = await _context.Meetings
+                .Where(meeting => meeting.Id == meetingId && meeting.MeetingAttendances.Any())
+                .Select(meeting => (int?)meeting.ConversationId)
+                .FirstOrDefaultAsync();
 
-            if (!meetingExists)
+            if (!conversationId.HasValue)
             {
                 return false;
             }
+
+            var isConversationMember = await _context.ConversationMembers.AnyAsync(member =>
+                member.ConversationId == conversationId.Value && member.UserId == currentUserId);
+
+            if (!isConversationMember)
+                throw new UnauthorizedAccessException("You are not a member of this conversation.");
 
             var alreadyJoined = await _context.MeetingAttendances
                 .AnyAsync(attendance =>
@@ -174,21 +186,6 @@ namespace DatingApp.Services
                     invitation.MeetingId == meetingId &&
                     invitation.UserId == currentUserId);
 
-            if (invitation == null)
-            {
-                var joinedMeanwhile = await _context.MeetingAttendances
-                    .AnyAsync(attendance =>
-                        attendance.MeetingId == meetingId && attendance.UserId == currentUserId);
-
-                if (joinedMeanwhile)
-                {
-                    return true;
-                }
-
-                throw new UnauthorizedAccessException(
-                    "You are not invited to this meeting.");
-            }
-
             var newAttendance = new MeetingAttendance
             {
                 MeetingId = meetingId,
@@ -196,7 +193,8 @@ namespace DatingApp.Services
             };
 
             _context.MeetingAttendances.Add(newAttendance);
-            _context.MeetingInvitations.Remove(invitation);
+            if (invitation != null)
+                _context.MeetingInvitations.Remove(invitation);
 
             try
             {
@@ -205,7 +203,8 @@ namespace DatingApp.Services
             catch (DbUpdateException)
             {
                 _context.Entry(newAttendance).State = EntityState.Detached;
-                _context.Entry(invitation).State = EntityState.Detached;
+                if (invitation != null)
+                    _context.Entry(invitation).State = EntityState.Detached;
 
                 var joinedMeanwhile = await _context.MeetingAttendances
                     .AnyAsync(existingAttendance =>
@@ -228,6 +227,23 @@ namespace DatingApp.Services
                 throw;
             }
 
+            await NotifyMeetingsChangedAsync(conversationId.Value);
+            return true;
+        }
+
+        public async Task<bool> DeclineInvitationAsync(int meetingId, string currentUserId)
+        {
+            var invitation = await _context.MeetingInvitations
+                .Include(invitation => invitation.Meeting)
+                .SingleOrDefaultAsync(invitation => invitation.MeetingId == meetingId && invitation.UserId == currentUserId);
+
+            if (invitation == null)
+                return false;
+
+            var conversationId = invitation.Meeting.ConversationId;
+            _context.MeetingInvitations.Remove(invitation);
+            await _context.SaveChangesAsync();
+            await NotifyMeetingsChangedAsync(conversationId);
             return true;
         }
 
@@ -260,6 +276,7 @@ namespace DatingApp.Services
             }
 
             await _context.SaveChangesAsync();
+            await NotifyMeetingsChangedAsync(meeting.ConversationId);
 
             return true;
         }
@@ -285,6 +302,7 @@ namespace DatingApp.Services
 
             _context.Meetings.Remove(meeting);
             await _context.SaveChangesAsync();
+            await NotifyMeetingsChangedAsync(meeting.ConversationId);
 
             return true;
         }
@@ -345,6 +363,22 @@ namespace DatingApp.Services
             return otherUserIds;
         }
 
+        private async Task NotifyMeetingsChangedAsync(int conversationId)
+        {
+            try
+            {
+                var memberIds = await _context.ConversationMembers
+                    .Where(member => member.ConversationId == conversationId)
+                    .Select(member => member.UserId).ToListAsync();
+                await _hubContext.Clients.Users(memberIds).SendAsync("MeetingsChanged", conversationId);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception,
+                    "Meeting saved, but the notification could not be sent: {ConversationId}.", conversationId);
+            }
+        }
+
         private IQueryable<Meeting> MeetingQuery()
         {
             return _context.Meetings
@@ -352,6 +386,10 @@ namespace DatingApp.Services
                 .Include(m => m.Location)
                 .Include(m => m.MeetingAttendances)
                 .ThenInclude(ma => ma.User)
+                .ThenInclude(user => user.HobbyUsers)
+                .ThenInclude(hu => hu.Hobby)
+                .Include(meeting => meeting.MeetingInvitations)
+                .ThenInclude(invitation => invitation.User)
                 .ThenInclude(user => user.HobbyUsers)
                 .ThenInclude(hu => hu.Hobby);
         }

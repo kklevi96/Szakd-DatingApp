@@ -82,7 +82,9 @@
                   <mat-icon>chat_bubble_outline</mat-icon>
                   {{ openingUserId() === card.user.id ? 'Opening...' : 'Message' }}
                 </button>
-                <button mat-stroked-button type="button" disabled>
+                <button mat-stroked-button type="button"
+                        [disabled]="openingUserId() !== null || isSaving()"
+                        (click)="inviteToMeeting(card.user.id)">
                   <mat-icon>event</mat-icon> Invite to a meeting
                 </button>
               </mat-card-actions>

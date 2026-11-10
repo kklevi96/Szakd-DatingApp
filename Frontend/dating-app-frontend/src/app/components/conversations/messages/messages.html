@@ -53,6 +53,7 @@
       rows="1"
       name="content"
       (input)="scrollToBottom()"
+      (keydown.enter)="$event.preventDefault(); sendMessage()"
       [(ngModel)]="newMessage.content"
       [disabled]="isLoading() || isSending() || !!errorMessage()"
       autocomplete="off">

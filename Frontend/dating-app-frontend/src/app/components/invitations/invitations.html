@@ -1,1 +1,58 @@
-<p>Invitations for this conversation will appear here.</p>
+<div class="invitation-toolbar">
+  <button mat-icon-button type="button" aria-label="Create a meeting" title="Create a meeting" (click)="createMeeting()">
+    <mat-icon>add</mat-icon>
+  </button>
+</div>
+@if (errorMessage()) {
+  <p role="alert">{{ errorMessage() }}</p>
+  <button mat-button type="button" (click)="loadMeetings()">Try again</button>
+}
+@if (actionError()) {
+  <p class="error-message" role="alert">{{ actionError() }}</p>
+}
+@if (isLoading() && meetings().length === 0) {
+  <p>Loading invitations...</p>
+} @else {
+  <div class="meeting-list">
+    @for (meeting of meetings(); track meeting.id) {
+      <mat-card appearance="outlined" class="meeting-card">
+        <mat-card-header>
+          <mat-card-title>{{ meeting.locationName }}</mat-card-title>
+          <mat-card-subtitle>{{ meeting.meetingDate | date:'yyyy.MM.dd. HH:mm' }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="location-address">{{ meeting.locationAddress }}</p>
+          @if (isInvited(meeting)) {
+            <p class="invited-label">You are invited</p>
+          }
+          <p class="people-label">Participants</p>
+          <mat-chip-set aria-label="Meeting participants">
+            @for (person of meeting.users; track person.id) {
+              <mat-chip>{{ person.firstName }}</mat-chip>
+            }
+          </mat-chip-set>
+          @if (meeting.invitedUsers.length > 0) {
+            <p class="people-label">Awaiting reply</p>
+            <mat-chip-set aria-label="Invited people">
+              @for (person of meeting.invitedUsers; track person.id) {
+                <mat-chip>{{ person.firstName }}</mat-chip>
+              }
+            </mat-chip-set>
+          }
+        </mat-card-content>
+        <mat-card-actions>
+          @if (isInvited(meeting)) {
+            <button mat-flat-button type="button" [disabled]="pendingIds().has(meeting.id)" (click)="respond(meeting, 'accept')">Accept</button>
+            <button mat-button type="button" [disabled]="pendingIds().has(meeting.id)" (click)="respond(meeting, 'decline')">Decline</button>
+          } @else if (isAttending(meeting)) {
+            <button mat-stroked-button type="button" [disabled]="pendingIds().has(meeting.id)" (click)="respond(meeting, 'leave')">Leave</button>
+          } @else if (auth.currentUser()) {
+            <button mat-flat-button type="button" [disabled]="pendingIds().has(meeting.id)" (click)="respond(meeting, 'join')">Join</button>
+          }
+        </mat-card-actions>
+      </mat-card>
+    } @empty {
+      @if (!errorMessage()) { <p>No meetings for this conversation yet.</p> }
+    }
+  </div>
+}

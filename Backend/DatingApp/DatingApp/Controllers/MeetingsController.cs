@@ -137,6 +137,15 @@ namespace DatingApp.Controllers
             return Ok();
         }
 
+        [HttpDelete("{id:int}/invitation")]
+        public async Task<IActionResult> DeclineInvitation(int id)
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _meetingService.DeclineInvitationAsync(id, currentUserId);
+
+            return result ? Ok() : NotFound();
+        }
+
         /*
          * admin user
         [HttpDelete("{id:int}")]

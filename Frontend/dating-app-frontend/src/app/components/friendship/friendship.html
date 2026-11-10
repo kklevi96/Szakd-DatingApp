@@ -8,7 +8,9 @@
                 (click)="startGroupConversation()">
           <mat-icon>forum</mat-icon>
         </button>
-        <button mat-icon-button type="button" aria-label="Send group invitation" title="Send group invitation" disabled>
+        <button mat-icon-button type="button" aria-label="Send group invitation" title="Send group invitation"
+                [disabled]="selectedUserIds().length < 2 || isSaving() || isOpeningConversation()"
+                (click)="inviteToMeeting(selectedUserIds())">
           <mat-icon>event</mat-icon>
         </button>
         <button mat-icon-button type="button" aria-label="Clear selection" title="Clear selection"
@@ -94,7 +96,9 @@
                 <mat-icon>chat_bubble_outline</mat-icon>
                 {{ openingUserId() === person.id ? 'Opening...' : 'Message' }}
               </button>
-              <button mat-stroked-button type="button" [attr.aria-label]="'Invite ' + person.firstName + ' to a meeting'" disabled>
+              <button mat-stroked-button type="button" [attr.aria-label]="'Invite ' + person.firstName + ' to a meeting'"
+                      [disabled]="isSaving() || isOpeningConversation()"
+                      (click)="inviteToMeeting([person.id])">
                 <mat-icon>event</mat-icon>
                 Invite to a meeting
               </button>

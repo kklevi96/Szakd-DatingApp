@@ -15,6 +15,9 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ConversationService } from '../../core/services/conversation-service';
 import { CreateConversationRequest } from '../../core/models/conversation.models';
+import { MatDialog } from '@angular/material/dialog';
+import { MeetingDialog } from '../meetings/meeting-dialog/meeting-dialog';
+import { Meeting, MeetingDialogData } from '../../core/models/meeting.models';
 
 @Component({
   selector: 'app-friendship',
@@ -55,6 +58,7 @@ export class Friendship implements OnInit {
     private hobbies: HobbyService,
     private conversationService: ConversationService,
     private router: Router,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -125,6 +129,24 @@ export class Friendship implements OnInit {
 
   openConversation(otherUserId: string): void {
     this.createConversation([otherUserId], false);
+  }
+
+  inviteToMeeting(otherUserIds: string[]): void {
+    if (this.isSaving() || this.isOpeningConversation() || !this.wantsFriendship() || otherUserIds.length === 0) { return; }
+    const token = this.auth.getToken();
+    if (!token) { return; }
+    const people = this.users().filter(person => otherUserIds.includes(person.id));
+    if (people.length !== otherUserIds.length) { return; }
+    this.dialog.open<MeetingDialog, MeetingDialogData, Meeting>(MeetingDialog, {
+      width: '480px', maxWidth: 'calc(100vw - 24px)',
+      data: { otherUserIds: [...otherUserIds], recipientNames: people.map(person => person.firstName) },
+    }).afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(meeting => {
+      if (meeting && this.auth.getToken() === token) {
+        void this.router.navigate(['/conversations'], {
+          queryParams: { conversationId: meeting.conversationId, invitations: true },
+        });
+      }
+    });
   }
 
   startGroupConversation(): void {

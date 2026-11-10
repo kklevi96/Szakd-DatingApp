@@ -63,7 +63,7 @@ namespace DatingApp.Data
 
             modelBuilder.Entity<MeetingInvitation>()
                 .HasOne(invitation => invitation.Meeting)
-                .WithMany()
+                .WithMany(meeting => meeting.MeetingInvitations)
                 .HasForeignKey(invitation => invitation.MeetingId)
                 .OnDelete(DeleteBehavior.Cascade);
 

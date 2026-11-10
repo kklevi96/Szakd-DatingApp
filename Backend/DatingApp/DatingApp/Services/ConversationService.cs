@@ -192,7 +192,9 @@ namespace DatingApp.Services
                 .ThenInclude(cm => cm.User)
                 .ThenInclude(user => user.HobbyUsers)
                 .ThenInclude(hu => hu.Hobby)
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderByDescending(c => c.Messages.Max(message => (DateTime?)message.CreatedAt))
+                .ThenByDescending(c => c.CreatedAt)
+                .ThenByDescending(c => c.Id)
                 .ToListAsync();
 
             return conversations.Select(ConversationMapper.ToResponse).ToList();
