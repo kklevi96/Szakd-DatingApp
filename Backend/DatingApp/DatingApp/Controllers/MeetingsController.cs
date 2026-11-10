@@ -92,6 +92,10 @@ namespace DatingApp.Controllers
             {
                 return BadRequest(ex.Message);
             }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
 
