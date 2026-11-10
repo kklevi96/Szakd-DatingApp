@@ -8,3 +8,9 @@ export class Conversation {
   memberUserIds: string[] = [];
   members: User[] = [];
 }
+
+export class CreateConversationRequest {
+  isGroup = false;
+  otherUserIds: string[] = [];
+  name: string | null = null;
+}

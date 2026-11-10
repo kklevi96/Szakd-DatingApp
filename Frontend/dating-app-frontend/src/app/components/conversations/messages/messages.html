@@ -45,15 +45,18 @@
 
 <form class="message-composer" (ngSubmit)="sendMessage()">
   <mat-form-field appearance="outline">
-    <mat-label>Message</mat-label>
-    <input
+    <mat-label>Type message here...</mat-label>
+    <textarea
       matInput
-      type="text"
+      cdkTextareaAutosize
+      cdkAutosizeMinRows="1"
+      rows="1"
       name="content"
+      (input)="scrollToBottom()"
       [(ngModel)]="newMessage.content"
       [disabled]="isLoading() || isSending() || !!errorMessage()"
-      autocomplete="off"
-      required>
+      autocomplete="off">
+    </textarea>
   </mat-form-field>
 
   <button

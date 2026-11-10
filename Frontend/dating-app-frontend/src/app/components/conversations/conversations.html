@@ -57,21 +57,73 @@
   </section>
   <section class="messages-panel">
     @if (selectedConversation(); as conversation) {
-      <header class="conversation-header">
-        <button
-          mat-button
-          type="button"
-          class="back-button"
-          (click)="selectedConversation.set(null)">
-          Back
-        </button>
+      <mat-drawer-container
+        class="conversation-drawer-container"
+        (pointerdown)="onPointerDown($event)"
+        (pointerup)="onPointerUp($event)"
+        (pointercancel)="cancelSwipe()">
+        <mat-drawer
+          id="conversation-invitations"
+          class="invitations-panel"
+          position="end"
+          [mode]="isMobile() ? 'over' : 'side'"
+          role="region"
+          aria-label="Conversation invitations"
+          [opened]="!isMobile() || showInvitations()"
+          [disableClose]="!isMobile()"
+          (openedChange)="isMobile() && showInvitations.set($event)">
+          <header class="conversation-header">
+            @if (isMobile()) {
+              <button
+                mat-icon-button
+                type="button"
+                class="conversation-icon-button"
+                aria-label="Back to conversation"
+                title="Back to conversation"
+                (click)="showInvitations.set(false)">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+            }
 
-        <h2>{{ getConversationName(conversation) }}</h2>
-      </header>
+            <h2>Invitations</h2>
+          </header>
 
-      <app-messages
-        [conversationId]="conversation.id">
-      </app-messages>
+          <p class="invitation-conversation-name">{{ getConversationName(conversation) }}</p>
+          <app-invitations [conversationId]="conversation.id"></app-invitations>
+        </mat-drawer>
+
+        <mat-drawer-content class="conversation-content" role="region" aria-label="Conversation messages">
+          <header class="conversation-header">
+            <button
+              mat-icon-button
+              type="button"
+              class="conversation-icon-button back-button"
+              aria-label="Back to conversations"
+              title="Back to conversations"
+              (click)="backToConversations()">
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+
+            <h2>{{ getConversationName(conversation) }}</h2>
+
+            @if (isMobile()) {
+              <button
+                mat-icon-button
+                type="button"
+                class="conversation-icon-button invitations-button"
+                aria-label="View invitations"
+                title="View invitations"
+                aria-controls="conversation-invitations"
+                [attr.aria-expanded]="showInvitations()"
+                (click)="showInvitations.set(true)">
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            }
+          </header>
+
+          <app-messages [conversationId]="conversation.id"></app-messages>
+        </mat-drawer-content>
+      </mat-drawer-container>
     } @else {
       <p>Select a conversation to view messages.</p>
     }

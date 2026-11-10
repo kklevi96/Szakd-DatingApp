@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-invitations',
@@ -6,4 +6,6 @@ import { Component } from '@angular/core';
   templateUrl: './invitations.html',
   styleUrl: './invitations.scss',
 })
-export class Invitations {}
+export class Invitations {
+  @Input({ required: true }) conversationId = 0;
+}

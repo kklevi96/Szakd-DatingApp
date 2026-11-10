@@ -79,8 +79,11 @@
                 @if (card.hobbies.length === 0) { <p>No hobbies selected yet.</p> }
               </mat-card-content>
               <mat-card-actions>
-                <button mat-stroked-button type="button" disabled>
-                  <mat-icon>chat_bubble_outline</mat-icon> Message
+                <button mat-stroked-button type="button"
+                        [disabled]="openingUserId() !== null || isSaving()"
+                        (click)="openConversation(card.user.id)">
+                  <mat-icon>chat_bubble_outline</mat-icon>
+                  {{ openingUserId() === card.user.id ? 'Opening...' : 'Message' }}
                 </button>
                 <button mat-stroked-button type="button" disabled>
                   <mat-icon>event</mat-icon> Invite to a meeting

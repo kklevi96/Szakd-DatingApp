@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Conversation } from '../models/conversation.models';
+import { Conversation, CreateConversationRequest } from '../models/conversation.models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -16,6 +16,13 @@ export class ConversationService {
   getMyConversations() {
     return this.http.get<Conversation[]>(
       environment.apiUrl + '/conversations/my',
+    );
+  }
+
+  createConversation(request: CreateConversationRequest) {
+    return this.http.post<Conversation>(
+      environment.apiUrl + '/conversations',
+      request,
     );
   }
 }

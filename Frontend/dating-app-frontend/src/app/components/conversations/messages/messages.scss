@@ -1,8 +1,8 @@
 :host {
   display: flex;
   flex-direction: column;
-  height: 65dvh;
-  min-height: 240px;
+  flex: 1;
+  min-height: 0;
 }
 
 .message-list {

@@ -12,6 +12,10 @@ import { CompatibilityService } from '../../core/services/compatibility-service'
 import { CompatibleUser } from '../../core/models/compatibility.models';
 import { Hobby } from '../../core/models/hobby.models';
 import { SignalRService } from '../../core/services/signalr.service';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ConversationService } from '../../core/services/conversation-service';
+import { CreateConversationRequest } from '../../core/models/conversation.models';
 
 interface DatingCard {
   user: CompatibleUser;
@@ -39,6 +43,7 @@ export class Dating implements OnInit {
   isLoadingMatches = signal(false);
   isSaving = signal(false);
   errorMessage = signal('');
+  openingUserId = signal<string | null>(null);
 
   private profileRequest?: Subscription;
   private matchesRequest?: Subscription;
@@ -49,6 +54,8 @@ export class Dating implements OnInit {
     private compatibility: CompatibilityService,
     private destroyRef: DestroyRef,
     public signalRService: SignalRService,
+    private conversationService: ConversationService,
+    private router: Router,
   ) { }
 
   ngOnInit(): void {
@@ -149,6 +156,44 @@ export class Dating implements OnInit {
           this.loadProfile(true);
           this.errorMessage.set(
             'Your dating preference could not be saved. Please try again.',
+          );
+        },
+      });
+  }
+
+  openConversation(otherUserId: string): void {
+    if (this.openingUserId() !== null || this.isSaving()) {
+      return;
+    }
+
+    const token = this.auth.getToken();
+    if (!token) { return; }
+
+    const request = new CreateConversationRequest();
+    request.otherUserIds = [otherUserId];
+    this.openingUserId.set(otherUserId);
+    this.errorMessage.set('');
+
+    this.conversationService.createConversation(request)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.openingUserId.set(null)),
+      )
+      .subscribe({
+        next: conversation => {
+          if (this.auth.getToken() !== token) { return; }
+
+          void this.router.navigate(['/conversations'], {
+            queryParams: { conversationId: conversation.id },
+          });
+        },
+        error: (error: HttpErrorResponse) => {
+          if (this.auth.getToken() !== token) { return; }
+
+          this.errorMessage.set(
+            typeof error.error === 'string' && error.error.trim()
+              ? error.error
+              : 'The conversation could not be opened. Please try again.',
           );
         },
       });

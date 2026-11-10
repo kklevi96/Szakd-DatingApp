@@ -8,13 +8,13 @@ import {
   OnChanges, OnInit,
   signal,
   SimpleChanges,
-  ViewChild
+  ViewChild,
 } from '@angular/core';
 import { SignalRService } from '../../../core/services/signalr.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { finalize, Subscription } from 'rxjs';
-import { Message, SendMessageRequest } from '../../../core/models/message.models';
+import { finalize, Subscription, } from 'rxjs';
+import { Message, SendMessageRequest, } from '../../../core/models/message.models';
 import { MessageService } from '../../../core/services/message-service';
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,7 +24,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule, } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-messages',
@@ -143,7 +143,7 @@ export class Messages implements OnChanges, OnInit {
     });
   }
 
-  private scrollToBottom(): void {
+  scrollToBottom(): void {
     afterNextRender(() => {
       const list = this.messageList?.nativeElement;
       if (list) { list.scrollTop = list.scrollHeight; }
