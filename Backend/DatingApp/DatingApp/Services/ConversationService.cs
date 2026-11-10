@@ -64,7 +64,8 @@ namespace DatingApp.Services
                 .FirstOrDefaultAsync();
 
             if (existingConversation != null)
-                return ConversationMapper.ToResponse(existingConversation);
+                return ConversationMapper.ToResponse(existingConversation,
+                    await GetUnreadMessageCountAsync(currentUserId, existingConversation.Id));
 
             var currentUser = await _userService.GetByIdAsync(currentUserId);
             var allWantFriendship = currentUser.WantsFriendship && otherUsers.All(user => user.WantsFriendship);
@@ -135,7 +136,63 @@ namespace DatingApp.Services
                     "Group name saved, but the notification could not be sent: {ConversationId}.", conversationId);
             }
 
-            return ConversationMapper.ToResponse(conversation);
+            return ConversationMapper.ToResponse(conversation,
+                await GetUnreadMessageCountAsync(currentUserId, conversationId));
+        }
+
+        public Task<int> GetUnreadConversationCountAsync(string currentUserId)
+        {
+            return _context.ConversationMembers.CountAsync(member => member.UserId == currentUserId &&
+                member.Conversation.Messages.Any(message =>
+                    message.SenderUserId != currentUserId && message.Id > member.LastReadMessageId));
+        }
+
+        public async Task<bool> MarkAsReadAsync(
+            string currentUserId, int conversationId, MarkConversationReadRequest request)
+        {
+            var membership = _context.ConversationMembers
+                .Where(member => member.ConversationId == conversationId && member.UserId == currentUserId);
+
+            if (!await membership.AnyAsync())
+                return false;
+
+            var messageExists = await _context.Messages.AnyAsync(message =>
+                message.Id == request.LastReadMessageId && message.ConversationId == conversationId);
+
+            if (!messageExists)
+                return false;
+
+            var updated = await membership
+                .Where(member => member.LastReadMessageId < request.LastReadMessageId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(member => member.LastReadMessageId, request.LastReadMessageId)
+                    .SetProperty(member => member.UpdatedAt, DateTime.UtcNow));
+
+            if (updated > 0)
+                await NotifyConversationReadAsync(currentUserId);
+
+            return true;
+        }
+
+        private Task<int> GetUnreadMessageCountAsync(string currentUserId, int conversationId)
+        {
+            return _context.ConversationMembers
+                .Where(member => member.UserId == currentUserId && member.ConversationId == conversationId)
+                .Select(member => member.Conversation.Messages.Count(message =>
+                    message.SenderUserId != currentUserId && message.Id > member.LastReadMessageId))
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task NotifyConversationReadAsync(string currentUserId)
+        {
+            try
+            {
+                await _hubContext.Clients.User(currentUserId).SendAsync("ConversationsChanged");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "Read status saved, but the notification could not be sent.");
+            }
         }
 
         public async Task NotifyConversationsChangedAsync(int conversationId)
@@ -180,10 +237,17 @@ namespace DatingApp.Services
 
         public async Task<List<ConversationResponse>> GetMyConversationsAsync(string currentUserId)
         {
-            var conversationIds = await _context.ConversationMembers
-                .Where(cm => cm.UserId == currentUserId)
-                .Select(cm => cm.ConversationId)
-                .ToListAsync();
+            var unreadCounts = await _context.ConversationMembers
+                .Where(member => member.UserId == currentUserId)
+                .Select(member => new
+                {
+                    member.ConversationId,
+                    UnreadMessageCount = member.Conversation.Messages.Count(message =>
+                        message.SenderUserId != currentUserId && message.Id > member.LastReadMessageId)
+                })
+                .ToDictionaryAsync(item => item.ConversationId, item => item.UnreadMessageCount);
+
+            var conversationIds = unreadCounts.Keys.ToList();
 
             var conversations = await _context.Conversations
                 .AsSplitQuery()
@@ -197,7 +261,8 @@ namespace DatingApp.Services
                 .ThenByDescending(c => c.Id)
                 .ToListAsync();
 
-            return conversations.Select(ConversationMapper.ToResponse).ToList();
+            return conversations.Select(conversation =>
+                ConversationMapper.ToResponse(conversation, unreadCounts[conversation.Id])).ToList();
         }
     }
 }

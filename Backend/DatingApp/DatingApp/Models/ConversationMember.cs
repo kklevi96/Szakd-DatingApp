@@ -11,6 +11,8 @@ namespace DatingApp.Models
         [Required]
         public string UserId { get; set; } = null!;
 
+        public int LastReadMessageId { get; set; }
+
         public virtual DatingappUser User { get; set; }
 
         public virtual Conversation Conversation { get; set; }

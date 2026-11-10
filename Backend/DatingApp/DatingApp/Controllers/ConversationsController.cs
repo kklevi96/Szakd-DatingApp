@@ -64,6 +64,25 @@ namespace DatingApp.Controllers
             }
         }
 
+        [HttpGet("unread-count")]
+        public async Task<IActionResult> GetUnreadCount()
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+            return Ok(await _conversationService.GetUnreadConversationCountAsync(currentUserId));
+        }
+
+        [HttpPut("{conversationId:int}/read")]
+        public async Task<IActionResult> MarkAsRead(int conversationId, MarkConversationReadRequest request)
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+            var result = await _conversationService.MarkAsReadAsync(currentUserId, conversationId, request);
+
+            if (!result)
+                return BadRequest("You cannot mark this message as read in this conversation.");
+
+            return Ok();
+        }
+
         [HttpGet("my")]
         public async Task<IActionResult> GetMy()
         {

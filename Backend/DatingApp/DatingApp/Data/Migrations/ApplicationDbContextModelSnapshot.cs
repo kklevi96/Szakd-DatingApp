@@ -94,6 +94,9 @@ namespace DatingApp.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("LastReadMessageId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -807,7 +810,7 @@ namespace DatingApp.Data.Migrations
             modelBuilder.Entity("DatingApp.Models.MeetingInvitation", b =>
                 {
                     b.HasOne("DatingApp.Models.Meeting", "Meeting")
-                        .WithMany()
+                        .WithMany("MeetingInvitations")
                         .HasForeignKey("MeetingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -930,6 +933,8 @@ namespace DatingApp.Data.Migrations
             modelBuilder.Entity("DatingApp.Models.Meeting", b =>
                 {
                     b.Navigation("MeetingAttendances");
+
+                    b.Navigation("MeetingInvitations");
                 });
 #pragma warning restore 612, 618
         }
