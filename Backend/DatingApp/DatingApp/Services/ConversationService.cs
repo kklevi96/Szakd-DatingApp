@@ -1,6 +1,8 @@
 ﻿using DatingApp.Data;
 using DatingApp.Dtos.Conversations;
+using DatingApp.Hubs;
 using DatingApp.Mappers;
+using Microsoft.AspNetCore.SignalR;
 using DatingApp.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,10 +13,16 @@ namespace DatingApp.Services
         private readonly DatingAppDbContext _context;
         private readonly IUserService _userService;
 
-        public ConversationService(DatingAppDbContext context, IUserService userService)
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<ConversationService> _logger;
+
+        public ConversationService(DatingAppDbContext context, IUserService userService,
+            IHubContext<NotificationHub> hubContext, ILogger<ConversationService> logger)
         {
             _context = context;
             _userService = userService;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         public async Task<ConversationResponse> CreateConversationAsync(string currentUserId, CreateConversationRequest request)
@@ -46,17 +54,17 @@ namespace DatingApp.Services
             if (request.IsGroup && conversationName != null && conversationName.Length > 100)
                 throw new ArgumentException("The group name cannot exceed 100 characters.");
 
-            if (!request.IsGroup)
-            {
-                var otherUserId = otherUserIds[0];
-                var existingConversation = await ConversationQuery().FirstOrDefaultAsync(conversation =>
-                    !conversation.IsGroup && conversation.ConversationMembers.Count == 2 &&
-                    conversation.ConversationMembers.Any(member => member.UserId == currentUserId) &&
-                    conversation.ConversationMembers.Any(member => member.UserId == otherUserId));
+            var memberUserIds = otherUserIds.Append(currentUserId).ToList();
+            var existingConversation = await ConversationQuery()
+                .Where(conversation => conversation.IsGroup == request.IsGroup &&
+                    conversation.ConversationMembers.Count == memberUserIds.Count &&
+                    conversation.ConversationMembers.All(member => memberUserIds.Contains(member.UserId)))
+                .OrderBy(conversation => conversation.CreatedAt)
+                .ThenBy(conversation => conversation.Id)
+                .FirstOrDefaultAsync();
 
-                if (existingConversation != null)
-                    return ConversationMapper.ToResponse(existingConversation);
-            }
+            if (existingConversation != null)
+                return ConversationMapper.ToResponse(existingConversation);
 
             var currentUser = await _userService.GetByIdAsync(currentUserId);
             var allWantFriendship = currentUser.WantsFriendship && otherUsers.All(user => user.WantsFriendship);
@@ -73,7 +81,7 @@ namespace DatingApp.Services
                 IsGroup = request.IsGroup,
                 Name = request.IsGroup ? conversationName : null,
                 CreatedAt = DateTime.UtcNow,
-                ConversationMembers = otherUserIds.Append(currentUserId)
+                ConversationMembers = memberUserIds
                     .Select(userId => new ConversationMember
                     {
                         UserId = userId,
@@ -86,7 +94,66 @@ namespace DatingApp.Services
             await _context.SaveChangesAsync();
 
             var createdConversation = await ConversationQuery().FirstAsync(c => c.Id == conversation.Id);
+
+            if (_context.Database.CurrentTransaction == null)
+                await NotifyConversationsChangedAsync(conversation.Id);
+
             return ConversationMapper.ToResponse(createdConversation);
+        }
+
+        public async Task<ConversationResponse> RenameConversationAsync(
+            string currentUserId, int conversationId, RenameConversationRequest request)
+        {
+            var conversation = await ConversationQuery().FirstOrDefaultAsync(c => c.Id == conversationId);
+
+            if (conversation == null)
+                throw new KeyNotFoundException("The conversation could not be found.");
+
+            if (!conversation.ConversationMembers.Any(member => member.UserId == currentUserId))
+                throw new UnauthorizedAccessException("You are not a member of this conversation.");
+
+            if (!conversation.IsGroup)
+                throw new ArgumentException("Only group conversations can be renamed.");
+
+            var name = request.Name?.Trim();
+
+            if (string.IsNullOrEmpty(name) || name.Length > 100)
+                throw new ArgumentException("The group name must contain between 1 and 100 characters.");
+
+            conversation.Name = name;
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                var memberIds = conversation.ConversationMembers.Select(member => member.UserId).ToList();
+                await _hubContext.Clients.Users(memberIds)
+                    .SendAsync("ConversationRenamed", new { id = conversation.Id, name = conversation.Name });
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception,
+                    "Group name saved, but the notification could not be sent: {ConversationId}.", conversationId);
+            }
+
+            return ConversationMapper.ToResponse(conversation);
+        }
+
+        public async Task NotifyConversationsChangedAsync(int conversationId)
+        {
+            try
+            {
+                var memberIds = await _context.ConversationMembers
+                    .Where(member => member.ConversationId == conversationId)
+                    .Select(member => member.UserId)
+                    .ToListAsync();
+
+                await _hubContext.Clients.Users(memberIds).SendAsync("ConversationsChanged");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception,
+                    "Conversation saved, but the list notification could not be sent: {ConversationId}.", conversationId);
+            }
         }
 
         private IQueryable<Conversation> ConversationQuery()

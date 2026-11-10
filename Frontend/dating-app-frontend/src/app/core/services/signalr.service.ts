@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Subject } from 'rxjs';
+import { ConversationNameChange } from '../models/conversation.models';
 import { environment } from '../../../environments/environment';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
@@ -20,6 +21,15 @@ export class SignalRService implements OnDestroy {
   private messagesChanged = new Subject<number | null>();
   readonly messagesChanged$ = this.messagesChanged.asObservable();
 
+  private potentialFriendsChanged = new Subject<void>();
+  readonly potentialFriendsChanged$ = this.potentialFriendsChanged.asObservable();
+
+  private conversationsChanged = new Subject<void>();
+  readonly conversationsChanged$ = this.conversationsChanged.asObservable();
+
+  private conversationRenamed = new Subject<ConversationNameChange | null>();
+  readonly conversationRenamed$ = this.conversationRenamed.asObservable();
+
   public startConnection = (token: string): void => {
     if (!token) {
       this.stopConnection();
@@ -38,7 +48,10 @@ export class SignalRService implements OnDestroy {
       .build();
 
     this.addMatchesListener();
+    this.addPotentialFriendsListener();
     this.addMessagesListener();
+    this.addConversationRenamedListener();
+    this.addConversationsListener();
 
     this.handleDisconnects();
     this.connect(this.hubConnection);
@@ -58,6 +71,21 @@ export class SignalRService implements OnDestroy {
     });
   };
 
+  public addPotentialFriendsListener = (): void => {
+    const connection = this.hubConnection;
+
+    if (!connection) {
+      return;
+    }
+
+    connection.off('PotentialFriendsChanged');
+    connection.on('PotentialFriendsChanged', () => {
+      if (this.hubConnection === connection) {
+        this.potentialFriendsChanged.next();
+      }
+    });
+  };
+
   public addMessagesListener = (): void => {
     const connection = this.hubConnection;
     if (!connection) {
@@ -68,6 +96,34 @@ export class SignalRService implements OnDestroy {
     connection.on('MessagesChanged', (conversationId: number) => {
       if (this.hubConnection === connection) {
         this.messagesChanged.next(conversationId);
+      }
+    });
+  };
+
+  public addConversationRenamedListener = (): void => {
+    const connection = this.hubConnection;
+    if (!connection) {
+      return;
+    }
+
+    connection.off('ConversationRenamed');
+    connection.on('ConversationRenamed', (change: ConversationNameChange) => {
+      if (this.hubConnection === connection) {
+        this.conversationRenamed.next(change);
+      }
+    });
+  };
+
+  public addConversationsListener = (): void => {
+    const connection = this.hubConnection;
+    if (!connection) {
+      return;
+    }
+
+    connection.off('ConversationsChanged');
+    connection.on('ConversationsChanged', () => {
+      if (this.hubConnection === connection) {
+        this.conversationsChanged.next();
       }
     });
   };
@@ -91,7 +147,9 @@ export class SignalRService implements OnDestroy {
       }
       this.state.set('connected');
       this.matchesChanged.next();
+      this.potentialFriendsChanged.next();
       this.messagesChanged.next(null);
+      this.conversationsChanged.next();
     });
 
     connection.onclose(() => {
@@ -135,7 +193,9 @@ export class SignalRService implements OnDestroy {
 
         this.state.set('connected');
         this.matchesChanged.next();
+        this.potentialFriendsChanged.next();
         this.messagesChanged.next(null);
+        this.conversationsChanged.next();
       })
       .catch(() => {
         if (this.hubConnection !== connection) {
@@ -167,6 +227,9 @@ export class SignalRService implements OnDestroy {
   ngOnDestroy(): void {
     this.stopConnection();
     this.matchesChanged.complete();
+    this.potentialFriendsChanged.complete();
     this.messagesChanged.complete();
+    this.conversationRenamed.complete();
+    this.conversationsChanged.complete();
   }
 }

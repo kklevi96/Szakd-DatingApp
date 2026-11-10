@@ -9,7 +9,6 @@
                       (change)="setDatingEnabled($event.checked)">
       Looking for a relationship
     </mat-slide-toggle>
-    @if (isSaving()) { <span role="status">Saving...</span> }
   </section>
   <p class="live-status" role="status">
     @if (signalRService.connectionState() !== 'connected') {
@@ -37,8 +36,6 @@
       <div class="results-header">
         <div>
           <h2>Your matches</h2>
-          <p>Your MBTI code: <strong>{{ currentUser.mbtiCode }}</strong></p>
-          <p>Shared hobbies are highlighted in blue.</p>
         </div>
         @if ((isLoadingProfile() || isLoadingMatches()) && cards().length > 0) {
           <p role="status">Updating matches...</p>

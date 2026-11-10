@@ -48,6 +48,11 @@ button.conversation-row.selected {
   text-transform: uppercase;
 }
 
+.conversation-avatar mat-icon {
+  margin: 0;
+  text-transform: none;
+}
+
 .conversation-name {
   font-weight: 600;
 }
@@ -82,6 +87,56 @@ button.conversation-row.selected {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.group-name-button {
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.group-name-button:hover {
+  color: var(--mat-sys-primary);
+}
+
+.name-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.name-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 6px;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: inherit;
+  font-size: 20px;
+}
+
+.name-input:focus {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 1px;
+}
+
+.name-error {
+  margin: 0 0 12px;
+  color: var(--mat-sys-error);
 }
 
 .conversation-drawer-container {

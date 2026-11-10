@@ -96,11 +96,12 @@ namespace DatingApp.Services
             try
             {
                 await _hubContext.Clients.All.SendAsync("MatchesChanged");
+                await _hubContext.Clients.All.SendAsync("PotentialFriendsChanged");
             }
             catch (Exception exception)
             {
                 _logger.LogWarning(exception,
-                    "Hobbies were saved, but the match notification could not be sent.");
+                    "Hobbies were saved, but the change notification could not be sent.");
             }
         }
     }

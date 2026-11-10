@@ -6,5 +6,7 @@ namespace DatingApp.Services
     {
         Task<ConversationResponse> CreateConversationAsync(string currentUserId, CreateConversationRequest request);
         Task<List<ConversationResponse>> GetMyConversationsAsync(string currentUserId);
+        Task NotifyConversationsChangedAsync(int conversationId);
+        Task<ConversationResponse> RenameConversationAsync(string currentUserId, int conversationId, RenameConversationRequest request);
     }
 }

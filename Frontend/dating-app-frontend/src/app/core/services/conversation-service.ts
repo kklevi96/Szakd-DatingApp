@@ -19,6 +19,13 @@ export class ConversationService {
     );
   }
 
+  renameConversation(conversationId: number, name: string) {
+    return this.http.put<Conversation>(
+      environment.apiUrl + '/conversations/' + conversationId + '/name',
+      { name },
+    );
+  }
+
   createConversation(request: CreateConversationRequest) {
     return this.http.post<Conversation>(
       environment.apiUrl + '/conversations',

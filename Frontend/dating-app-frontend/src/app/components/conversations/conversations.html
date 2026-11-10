@@ -30,7 +30,11 @@
             matListItemAvatar
             class="conversation-avatar"
             aria-hidden="true">
-            {{ getConversationName(conversation).charAt(0) }}
+            @if (conversation.isGroup) {
+              <mat-icon>groups</mat-icon>
+            } @else {
+              {{ getConversationName(conversation).charAt(0) }}
+            }
           </span>
 
             <span matListItemTitle class="conversation-name">
@@ -94,19 +98,59 @@
 
         <mat-drawer-content class="conversation-content" role="region" aria-label="Conversation messages">
           <header class="conversation-header">
-            <button
-              mat-icon-button
-              type="button"
-              class="conversation-icon-button back-button"
-              aria-label="Back to conversations"
-              title="Back to conversations"
-              (click)="backToConversations()">
-              <mat-icon>arrow_back</mat-icon>
-            </button>
+            @if (!isEditingName()) {
+              <button
+                mat-icon-button
+                type="button"
+                class="conversation-icon-button back-button"
+                aria-label="Back to conversations"
+                title="Back to conversations"
+                (click)="backToConversations()">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
 
-            <h2>{{ getConversationName(conversation) }}</h2>
+            }
 
-            @if (isMobile()) {
+            @if (isEditingName()) {
+              <div class="name-editor">
+                @if (isMobile()) {
+                  <button mat-icon-button type="button"
+                    class="conversation-icon-button"
+                    aria-label="Cancel renaming" title="Cancel renaming"
+                    [disabled]="isSavingName()" (click)="cancelRenaming()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+
+                <input #nameInput matInput class="name-input"
+                  aria-label="Group name" maxlength="100" required
+                  [value]="editedName" (input)="editedName = nameInput.value" [readonly]="isSavingName()"
+                  [attr.aria-invalid]="nameError() ? 'true' : null"
+                  (keydown.enter)="$event.preventDefault(); saveConversationName()"
+                  (keydown.escape)="$event.preventDefault(); cancelRenaming()">
+
+                @if (isMobile()) {
+                  <button mat-icon-button type="button"
+                    class="conversation-icon-button"
+                    aria-label="Save group name" title="Save group name"
+                    [disabled]="isSavingName()" (click)="saveConversationName()">
+                    <mat-icon>check</mat-icon>
+                  </button>
+                }
+              </div>
+            } @else if (conversation.isGroup) {
+              <h2>
+                <button type="button" class="group-name-button"
+                  aria-label="Rename group conversation" title="Rename group conversation"
+                  [disabled]="isSavingName()" (click)="startRenaming()">
+                  {{ getConversationName(conversation) }}
+                </button>
+              </h2>
+            } @else {
+              <h2>{{ getConversationName(conversation) }}</h2>
+            }
+
+            @if (isMobile() && !isEditingName()) {
               <button
                 mat-icon-button
                 type="button"
@@ -120,6 +164,10 @@
               </button>
             }
           </header>
+
+          @if (nameError()) {
+            <p class="name-error" role="alert">{{ nameError() }}</p>
+          }
 
           <app-messages [conversationId]="conversation.id"></app-messages>
         </mat-drawer-content>

@@ -14,3 +14,8 @@ export class CreateConversationRequest {
   otherUserIds: string[] = [];
   name: string | null = null;
 }
+
+export interface ConversationNameChange {
+  id: number;
+  name: string;
+}

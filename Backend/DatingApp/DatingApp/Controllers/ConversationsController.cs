@@ -41,6 +41,29 @@ namespace DatingApp.Controllers
             }
         }
 
+        [HttpPut("{conversationId}/name")]
+        public async Task<IActionResult> Rename(int conversationId, [FromBody] RenameConversationRequest request)
+        {
+            var currentUserId = _userService.GetCurrentUserId(User);
+
+            try
+            {
+                return Ok(await _conversationService.RenameConversationAsync(currentUserId, conversationId, request));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("my")]
         public async Task<IActionResult> GetMy()
         {

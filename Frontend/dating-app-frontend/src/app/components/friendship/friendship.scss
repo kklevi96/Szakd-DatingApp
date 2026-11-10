@@ -1,0 +1,136 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: block;
+}
+
+.friendship-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-card {
+  min-width: 0;
+  padding: 18px;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: white;
+
+  mat-card-header,
+  mat-card-content,
+  mat-card-actions {
+    padding: 0;
+  }
+
+  mat-card-content {
+    margin-top: 18px;
+  }
+
+  @include mat.chips-overrides((
+    elevated-container-color: #f1f5f9,
+    label-text-color: #475569,
+  ));
+}
+
+@media (max-width: 640px) {
+  .friendship-page {
+    padding: 24px 12px;
+  }
+
+  .users-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.friendship-page h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.search-settings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+}
+
+.results-count {
+  margin: 24px 0 20px;
+  color: #64748b;
+}
+
+.paused-panel, .empty-panel {
+  margin-top: 24px;
+  padding: 32px;
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 20px;
+  background: #f8fafc;
+  p {
+    color: #64748b;
+  }
+}
+
+.paused-panel > mat-icon {
+  color: #8b5cf6;
+}
+
+.shared-hobby {
+  @include mat.chips-overrides((
+    elevated-container-color: var(--mat-sys-primary-container),
+    label-text-color: var(--mat-sys-primary),
+    with-icon-icon-color: var(--mat-sys-primary),
+  ));
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.group-actions > span {
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.profile-card.selected {
+  border-color: var(--mat-sys-primary);
+  box-shadow: 0 0 0 1px var(--mat-sys-primary);
+}
+
+.profile-card mat-card-title {
+  overflow-wrap: anywhere;
+}
+
+.profile-card mat-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}

@@ -10,13 +10,16 @@ import { Admin } from './components/admin/admin';
 import { AuthGuardAdmin } from './core/guards/auth-guard-admin';
 
 import { Dating } from './components/dating/dating';
-import { Friendship } from './components/friendship/friendship';
-import { Conversations } from './components/conversations/conversations';
 import { Meetings } from './components/meetings/meetings';
+import { Conversations } from './components/conversations/conversations';
 
 export const routes: Routes = [
   { path: 'dating', component: Dating, canActivate: [authGuard] },
-  { path: 'friends', component: Friendship, canActivate: [authGuard] },
+  {
+    path: 'friends',
+    loadComponent: () => import('./components/friendship/friendship').then(m => m.Friendship),
+    canActivate: [authGuard],
+  },
   { path: 'conversations', component: Conversations, canActivate: [authGuard] },
   { path: 'meetings', component: Meetings, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },

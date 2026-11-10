@@ -77,6 +77,9 @@ namespace DatingApp.Services
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
+            if (!request.ConversationId.HasValue)
+                await _conversationService.NotifyConversationsChangedAsync(conversationId);
+
             return await GetMeetingResponseAsync(meeting.Id);
         }
 

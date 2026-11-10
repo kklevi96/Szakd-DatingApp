@@ -85,6 +85,7 @@ namespace DatingApp.Services
                 return null;
 
             var relationshipChanged = user.WantsRelationship != request.WantsRelationship;
+            var friendshipChanged = user.WantsFriendship != request.WantsFriendship;
 
             user.WantsRelationship = request.WantsRelationship;
             user.WantsFriendship = request.WantsFriendship;
@@ -99,8 +100,19 @@ namespace DatingApp.Services
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogWarning(exception,
-                        "Search preferences were saved, but the match notification could not be sent.");
+                    _logger.LogWarning(exception, "Match notification sending error, but changes saved");
+                }
+            }
+
+            if (result.Succeeded && friendshipChanged)
+            {
+                try
+                {
+                    await _hubContext.Clients.All.SendAsync("PotentialFriendsChanged");
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogWarning(exception, "Friend notification sending error, but changes saved.");
                 }
             }
 

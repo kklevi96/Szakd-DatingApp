@@ -1,1 +1,109 @@
-<p>friendship works!</p>
+<section class="friendship-page">
+  <header class="page-header">
+    <h1>Friendship</h1>
+
+      <div class="group-actions" aria-label="Selected people actions">
+        <button mat-icon-button type="button" aria-label="Start group chat" title="Start group chat"
+                [disabled]="selectedUserIds().length < 2 || isSaving() || isOpeningConversation()"
+                (click)="startGroupConversation()">
+          <mat-icon>forum</mat-icon>
+        </button>
+        <button mat-icon-button type="button" aria-label="Send group invitation" title="Send group invitation" disabled>
+          <mat-icon>event</mat-icon>
+        </button>
+        <button mat-icon-button type="button" aria-label="Clear selection" title="Clear selection"
+                [disabled]="isSaving() || isOpeningConversation() || selectedUserIds().length == 0"
+                (click)="selectedUserIds.set([])">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+  </header>
+
+  <section class="search-settings" aria-label="Friendship preferences">
+    <mat-slide-toggle
+      [checked]="wantsFriendship()"
+      [disabled]="!user() || isSaving() || isOpeningConversation()"
+      (change)="setFriendshipEnabled($event.checked)"
+    >
+      Looking for friends
+    </mat-slide-toggle>
+  </section>
+
+  @if (errorMessage()) {
+    <p role="alert">{{ errorMessage() }}</p>
+  }
+
+  @if (conversationError()) {
+    <p role="alert">{{ conversationError() }}</p>
+  }
+
+  @if (!wantsFriendship()) {
+    <div class="paused-panel">
+      <mat-icon>pause_circle</mat-icon>
+      <h2>Looking for friends is paused</h2>
+      <p>Turn on the switch to see the people wanting to make friends.</p>
+      <p>Your existing conversations remain available.</p>
+    </div>
+  }
+
+  @if (wantsFriendship() && !isSaving()) {
+    @if (isLoadingUsers() && !hasLoadedUsers()) {
+      <p>Loading..</p>
+    } @else if (!errorMessage()) {
+      <p class="results-count">
+        {{ users().length }}
+        {{ users().length === 1 ? 'person wants' : 'people want' }}
+        to make friends
+      </p>
+
+      <div class="users-grid">
+        @for (person of users(); track person.id) {
+          <mat-card class="profile-card" [class.selected]="selectedUserIds().includes(person.id)"
+                    (click)="toggleUserSelection(person.id)">
+            <mat-card-header>
+              <mat-card-title>
+                {{ person.firstName }} ({{ person.age }})
+              </mat-card-title>
+
+              <mat-card-subtitle>
+                MBTI {{ person.mbtiCode }}
+              </mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <mat-chip-set [attr.aria-label]="person.firstName + ' hobbies'">
+                @for (hobby of person.hobbies; track hobby.id) {
+                  <mat-chip [class.shared-hobby]="myHobbyIds().has(hobby.id)">
+                    @if (myHobbyIds().has(hobby.id)) {
+                      <mat-icon matChipAvatar>done</mat-icon>
+                    }
+                    {{ hobby.name }}
+                  </mat-chip>
+                }
+              </mat-chip-set>
+
+              @if (person.hobbies.length === 0) {
+                <p>No hobbies selected yet.</p>
+              }
+            </mat-card-content>
+
+            <mat-card-actions (click)="$event.stopPropagation()">
+              <button mat-stroked-button type="button" [attr.aria-label]="'Message ' + person.firstName"
+                      [disabled]="isSaving() || isOpeningConversation()"
+                      (click)="openConversation(person.id)">
+                <mat-icon>chat_bubble_outline</mat-icon>
+                {{ openingUserId() === person.id ? 'Opening...' : 'Message' }}
+              </button>
+              <button mat-stroked-button type="button" [attr.aria-label]="'Invite ' + person.firstName + ' to a meeting'" disabled>
+                <mat-icon>event</mat-icon>
+                Invite to a meeting
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        } @empty {
+          <p>No other users want to make friends at the moment :(</p>
+        }
+      </div>
+    }
+  }
+</section>
