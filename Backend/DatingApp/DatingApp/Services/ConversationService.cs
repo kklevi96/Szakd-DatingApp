@@ -19,114 +19,61 @@ namespace DatingApp.Services
 
         public async Task<ConversationResponse> CreateConversationAsync(string currentUserId, CreateConversationRequest request)
         {
-            if (request.OtherUserIds == null ||
-                request.OtherUserIds.Count == 0 ||
+            if (request.OtherUserIds == null || request.OtherUserIds.Count == 0 ||
                 request.OtherUserIds.Any(string.IsNullOrWhiteSpace))
-            {
                 throw new ArgumentException("Please select valid users.");
-            }
 
-            var otherUserIds = request.OtherUserIds
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
+            var otherUserIds = request.OtherUserIds.Distinct(StringComparer.Ordinal).ToList();
 
             if (otherUserIds.Contains(currentUserId))
-            {
-                throw new ArgumentException(
-                    "Do not include yourself in the selected users.");
-            }
+                throw new ArgumentException("Do not include yourself in the selected users.");
 
             if (!request.IsGroup && otherUserIds.Count != 1)
-            {
-                throw new ArgumentException(
-                    "A direct conversation requires exactly one other user.");
-            }
-            else if (request.IsGroup && otherUserIds.Count < 2)
-            {
-                throw new ArgumentException(
-                    "A group conversation requires at least two other users.");
-            }
+                throw new ArgumentException("A direct conversation requires exactly one other user.");
 
-            var existingUserCount = await _context.Users
-                .CountAsync(user => otherUserIds.Contains(user.Id));
+            if (request.IsGroup && otherUserIds.Count < 2)
+                throw new ArgumentException("A group conversation requires at least two other users.");
 
-            if (existingUserCount != otherUserIds.Count)
-            {
-                throw new KeyNotFoundException(
-                    "One or more selected users could not be found.");
-            }
+            var otherUsers = await _context.Users
+                .Where(user => otherUserIds.Contains(user.Id))
+                .ToListAsync();
 
-            var conversationName = string.IsNullOrWhiteSpace(request.Name)
-                ? null
-                : request.Name.Trim();
+            if (otherUsers.Count != otherUserIds.Count)
+                throw new KeyNotFoundException("One or more selected users could not be found.");
 
-            if (request.IsGroup &&
-                conversationName != null &&
-                conversationName.Length > 100)
-            {
-                throw new ArgumentException(
-                    "The group name cannot exceed 100 characters.");
-            }
+            var conversationName = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name.Trim();
+
+            if (request.IsGroup && conversationName != null && conversationName.Length > 100)
+                throw new ArgumentException("The group name cannot exceed 100 characters.");
 
             if (!request.IsGroup)
             {
                 var otherUserId = otherUserIds[0];
-
-                var existingConversation = await _context.Conversations
-                    .AsSplitQuery()
-                    .Include(conversation => conversation.ConversationMembers)
-                    .ThenInclude(member => member.User)
-                    .ThenInclude(user => user.HobbyUsers)
-                    .ThenInclude(hu => hu.Hobby)
-                    .FirstOrDefaultAsync(conversation =>
-                        !conversation.IsGroup &&
-                        conversation.ConversationMembers.Count == 2 &&
-                        conversation.ConversationMembers.Any(member =>
-                            member.UserId == currentUserId) &&
-                        conversation.ConversationMembers.Any(member =>
-                            member.UserId == otherUserId));
+                var existingConversation = await ConversationQuery().FirstOrDefaultAsync(conversation =>
+                    !conversation.IsGroup && conversation.ConversationMembers.Count == 2 &&
+                    conversation.ConversationMembers.Any(member => member.UserId == currentUserId) &&
+                    conversation.ConversationMembers.Any(member => member.UserId == otherUserId));
 
                 if (existingConversation != null)
-                {
                     return ConversationMapper.ToResponse(existingConversation);
-                }
-
-                var currentUser = await _userService.GetByIdAsync(currentUserId);
-                var otherUser = await _userService.GetByIdAsync(otherUserId);
-
-                var friendshipCompatibleTwo = currentUser.WantsFriendship && otherUser.WantsFriendship;
-
-                var compatible = await _context.Compatibilities
-                    .AnyAsync(compatibility =>
-                        ((compatibility.UserId_A == currentUserId &&
-                         compatibility.UserId_B == otherUserId) ||
-                        (compatibility.UserId_A == otherUserId &&
-                         compatibility.UserId_B == currentUserId)) &&
-                        compatibility.UserA.WantsRelationship && compatibility.UserB.WantsRelationship &&
-                        Math.Abs((long)compatibility.UserA.MBTICode - compatibility.UserB.MBTICode) <= 3 &&
-                        ((compatibility.UserA.Gender == "male" && compatibility.UserB.InterestedinMan) ||
-                         (compatibility.UserA.Gender == "female" && compatibility.UserB.InterestedinWoman)) &&
-                        ((compatibility.UserB.Gender == "male" && compatibility.UserA.InterestedinMan) ||
-                         (compatibility.UserB.Gender == "female" && compatibility.UserA.InterestedinWoman)));
-
-                if (!compatible && !friendshipCompatibleTwo)
-                {
-                    throw new ArgumentException(
-                        "You can only create a direct conversation with a compatible user.");
-                }
-
             }
 
-            var memberUserIds = otherUserIds
-                .Append(currentUserId)
-                .ToList();
+            var currentUser = await _userService.GetByIdAsync(currentUserId);
+            var allWantFriendship = currentUser.WantsFriendship && otherUsers.All(user => user.WantsFriendship);
+
+            if (request.IsGroup && !allWantFriendship)
+                throw new ArgumentException("All group members must be looking for friendship.");
+
+            if (!request.IsGroup && !allWantFriendship &&
+                !await AreDatingCompatibleAsync(currentUserId, otherUserIds[0]))
+                throw new ArgumentException("You can only create a direct conversation with a compatible user.");
 
             var conversation = new Conversation
             {
                 IsGroup = request.IsGroup,
                 Name = request.IsGroup ? conversationName : null,
                 CreatedAt = DateTime.UtcNow,
-                ConversationMembers = memberUserIds
+                ConversationMembers = otherUserIds.Append(currentUserId)
                     .Select(userId => new ConversationMember
                     {
                         UserId = userId,
@@ -138,16 +85,31 @@ namespace DatingApp.Services
             _context.Conversations.Add(conversation);
             await _context.SaveChangesAsync();
 
-            var createdConversation = await _context.Conversations
+            var createdConversation = await ConversationQuery().FirstAsync(c => c.Id == conversation.Id);
+            return ConversationMapper.ToResponse(createdConversation);
+        }
+
+        private IQueryable<Conversation> ConversationQuery()
+        {
+            return _context.Conversations
                 .AsSplitQuery()
-                .Include(savedConversation => savedConversation.ConversationMembers)
+                .Include(conversation => conversation.ConversationMembers)
                 .ThenInclude(member => member.User)
                 .ThenInclude(user => user.HobbyUsers)
-                .ThenInclude(hu => hu.Hobby)
-                .FirstAsync(savedConversation =>
-                    savedConversation.Id == conversation.Id);
+                .ThenInclude(hu => hu.Hobby);
+        }
 
-            return ConversationMapper.ToResponse(createdConversation);
+        private Task<bool> AreDatingCompatibleAsync(string currentUserId, string otherUserId)
+        {
+            return _context.Compatibilities.AnyAsync(compatibility =>
+                ((compatibility.UserId_A == currentUserId && compatibility.UserId_B == otherUserId) ||
+                 (compatibility.UserId_A == otherUserId && compatibility.UserId_B == currentUserId)) &&
+                compatibility.UserA.WantsRelationship && compatibility.UserB.WantsRelationship &&
+                Math.Abs((long)compatibility.UserA.MBTICode - compatibility.UserB.MBTICode) <= 3 &&
+                ((compatibility.UserA.Gender == "male" && compatibility.UserB.InterestedinMan) ||
+                 (compatibility.UserA.Gender == "female" && compatibility.UserB.InterestedinWoman)) &&
+                ((compatibility.UserB.Gender == "male" && compatibility.UserA.InterestedinMan) ||
+                 (compatibility.UserB.Gender == "female" && compatibility.UserA.InterestedinWoman)));
         }
 
         public async Task<List<ConversationResponse>> GetMyConversationsAsync(string currentUserId)
