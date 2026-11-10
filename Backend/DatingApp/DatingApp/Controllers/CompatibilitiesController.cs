@@ -18,7 +18,6 @@ namespace DatingApp.Controllers
             _userService = userService;
         }
 
-        [Authorize]
         [HttpPost("check/{otherUserId}")]
         public async Task<IActionResult> CheckOrCreate(string otherUserId)
         {
@@ -33,24 +32,28 @@ namespace DatingApp.Controllers
             return BadRequest();
         }
 
-        [Authorize]
-        [HttpGet("my")]
-        public async Task<IActionResult> GetMyCompatibilities()
+        [HttpPost("my-dating")]
+        public async Task<IActionResult> GetMyDating()
         {
             var currentUserId = _userService.GetCurrentUserId(User);
-            var result = await _compatibilityService.GetMyCompatibilitiesAsync(currentUserId);
+
+            await _compatibilityService.GenerateMyCompatibilitiesAsync(currentUserId);
+
+            var result = await _compatibilityService
+                .GetMyCompatibilitiesAsync(currentUserId);
+
             return Ok(result);
         }
 
-        [Authorize]
-        [HttpPost("generate-my")]
-        public async Task<IActionResult> GenerateMy()
+        [HttpGet("friendship")]
+        public async Task<IActionResult> GetFriendshipUsers()
         {
             var currentUserId = _userService.GetCurrentUserId(User);
-            var createdCount = await _compatibilityService.GenerateMyCompatibilitiesAsync(currentUserId);
 
-            return Ok(new { createdCount });
+            var result = await _compatibilityService
+                .GetFriendshipUsersAsync(currentUserId);
 
+            return Ok(result);
         }
     }
 }

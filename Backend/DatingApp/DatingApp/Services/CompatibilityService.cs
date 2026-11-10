@@ -1,5 +1,6 @@
 ﻿using DatingApp.Data;
 using DatingApp.Dtos.Compatibilities;
+using DatingApp.Dtos.Users;
 using DatingApp.Mappers;
 using DatingApp.Models;
 using Microsoft.EntityFrameworkCore;
@@ -183,6 +184,23 @@ namespace DatingApp.Services
             }
 
             return newCompatibilities.Count;
+        }
+
+        public async Task<List<UserResponse>> GetFriendshipUsersAsync(string currentUserId)
+        {
+            var currentUser = await _userService.GetByIdAsync(currentUserId);
+
+            if (!currentUser.WantsFriendship)
+                return new List<UserResponse>();
+
+            var users = await _context.Users
+                .Where(user => user.Id != currentUserId && user.WantsFriendship)
+                .Include(user => user.HobbyUsers)
+                .ThenInclude(hu => hu.Hobby)
+                .OrderBy(user => user.FirstName)
+                .ToListAsync();
+
+            return users.Select(UserMapper.ToResponse).ToList();
         }
 
         private static bool AreMutuallyInterested(DatingappUser user, DatingappUser otherUser)

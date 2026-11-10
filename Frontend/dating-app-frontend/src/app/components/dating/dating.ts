@@ -222,9 +222,8 @@ export class Dating implements OnInit {
       .pipe(
         switchMap(hobbies => {
           myHobbyIds = new Set(hobbies.map(hobby => hobby.id));
-          return this.compatibility.generateMy();
+          return this.compatibility.getMyDating();
         }),
-        switchMap(() => this.compatibility.getMy()),
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.isLoadingMatches.set(false)),
       )
