@@ -19,42 +19,11 @@ namespace DatingApp.Controllers
             _userService = userService;
         }
 
-        [HttpGet("my")]
-        public async Task<IActionResult> GetMyMeetings()
+        [HttpGet]
+        public async Task<IActionResult> GetMeetings([FromQuery] int? conversationId = null)
         {
             var currentUserId = _userService.GetCurrentUserId(User);
-            var meetings = await _meetingService.GetMyMeetingsAsync(currentUserId);
-
-            return Ok(meetings);
-        }
-
-        [HttpGet("conversation/{conversationId:int}")]
-        public async Task<IActionResult> GetByConversation(int conversationId)
-        {
-            var currentUserId = _userService.GetCurrentUserId(User);
-
-            try
-            {
-                var meetings = await _meetingService.GetMeetingsByConversationAsync(
-                    conversationId, currentUserId);
-
-                return Ok(meetings);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-        }
-
-        [HttpGet("invitations")]
-        public async Task<IActionResult> GetMyInvitations()
-        {
-            var currentUserId = _userService.GetCurrentUserId(User);
-            var meetings = await _meetingService.GetMyInvitationsAsync(currentUserId);
+            var meetings = await _meetingService.GetMeetingsAsync(currentUserId, conversationId);
 
             return Ok(meetings);
         }
@@ -112,10 +81,8 @@ namespace DatingApp.Controllers
                 {
                     return NotFound();
                 }
-                else
-                {
-                    return Ok();
-                }
+
+                return Ok();
             }
             catch (UnauthorizedAccessException)
             {
@@ -137,17 +104,7 @@ namespace DatingApp.Controllers
             return Ok();
         }
 
-        [HttpDelete("{id:int}/invitation")]
-        public async Task<IActionResult> DeclineInvitation(int id)
-        {
-            var currentUserId = _userService.GetCurrentUserId(User);
-            var result = await _meetingService.DeclineInvitationAsync(id, currentUserId);
-
-            return result ? Ok() : NotFound();
-        }
-
-        /*
-         * admin user
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -169,6 +126,5 @@ namespace DatingApp.Controllers
                 return Forbid();
             }
         }
-        */
     }
 }

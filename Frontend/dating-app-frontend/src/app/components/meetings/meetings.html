@@ -1,1 +1,56 @@
-<p>meetings works!</p>
+<section class="meetings-page">
+  <header class="page-header">
+    <h1>Meetings</h1>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="error-message" role="alert">{{ errorMessage() }}</p>
+    <button mat-button type="button" (click)="loadMeetings()">Try again</button>
+  }
+
+  @if (isLoading() && !hasLoaded()) {
+    <mat-spinner [diameter]="40" aria-label="Loading meetings"></mat-spinner>
+  } @else if (hasLoaded()) {
+    <mat-tab-group animationDuration="0ms">
+      <mat-tab label="Upcoming">
+        <section class="invitations-section" aria-labelledby="invitations-heading">
+          <h2 id="invitations-heading">Invitations</h2>
+          <div class="meetings-grid">
+            @for (meeting of upcomingInvitations(); track meeting.id) {
+              <app-meeting-card [meeting]="meeting" (changed)="loadMeetings()">
+              </app-meeting-card>
+            } @empty {
+              <p class="empty-message">There are no upcoming meetings you can join at the moment.</p>
+            }
+          </div>
+        </section>
+
+        <section class="my-meetings-section" aria-labelledby="my-meetings-heading">
+          <h2 id="my-meetings-heading">Your meetings ({{ upcomingMeetings().length }})</h2>
+          <div class="meetings-grid">
+            @for (meeting of upcomingMeetings(); track meeting.id) {
+              <app-meeting-card [meeting]="meeting" (changed)="loadMeetings()">
+              </app-meeting-card>
+            } @empty {
+              <p class="empty-message">You are not taking part in any upcoming meetings yet.</p>
+            }
+          </div>
+        </section>
+      </mat-tab>
+
+      <mat-tab [label]="'Past (' + pastMeetings().length + ')'">
+        <section class="past-meetings-section" aria-labelledby="past-meetings-heading">
+          <h2 id="past-meetings-heading">Past meetings</h2>
+          <div class="meetings-grid">
+            @for (meeting of pastMeetings(); track meeting.id) {
+              <app-meeting-card [meeting]="meeting" [showActions]="false">
+              </app-meeting-card>
+            } @empty {
+              <p class="empty-message">No past meetings.</p>
+            }
+          </div>
+        </section>
+      </mat-tab>
+    </mat-tab-group>
+  }
+</section>

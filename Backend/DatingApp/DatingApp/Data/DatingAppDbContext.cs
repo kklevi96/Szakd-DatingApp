@@ -16,7 +16,6 @@ namespace DatingApp.Data
         public DbSet<Location> Locations { get; set; }
         public DbSet<Meeting> Meetings { get; set; }
         public DbSet<MeetingAttendance> MeetingAttendances { get; set; }
-        public DbSet<MeetingInvitation> MeetingInvitations { get; set; }
         public DbSet<Message> Messages { get; set; }
 
         public DatingAppDbContext(DbContextOptions<DatingAppDbContext> options)
@@ -52,26 +51,6 @@ namespace DatingApp.Data
             modelBuilder.Entity<MeetingAttendance>()
                 .HasIndex(ma => new { ma.MeetingId, ma.UserId })
                 .IsUnique();
-
-            modelBuilder.Entity<MeetingInvitation>()
-                .HasIndex(invitation => new
-                {
-                    invitation.MeetingId,
-                    invitation.UserId
-                })
-                .IsUnique();
-
-            modelBuilder.Entity<MeetingInvitation>()
-                .HasOne(invitation => invitation.Meeting)
-                .WithMany(meeting => meeting.MeetingInvitations)
-                .HasForeignKey(invitation => invitation.MeetingId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<MeetingInvitation>()
-                .HasOne(invitation => invitation.User)
-                .WithMany()
-                .HasForeignKey(invitation => invitation.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Meeting>()
                 .HasOne(m => m.Location)

@@ -7,20 +7,20 @@ import { environment } from '../../../environments/environment';
 export class MeetingService {
   constructor(private http: HttpClient) {}
 
-  getByConversation(conversationId: number) {
-    return this.http.get<Meeting[]>(environment.apiUrl + '/meetings/conversation/' + conversationId);
+  getMeetings(conversationId?: number) {
+    const params: { conversationId?: number } = {};
+    if (conversationId !== undefined) {
+      params.conversationId = conversationId;
+    }
+    return this.http.get<Meeting[]>(environment.apiUrl + '/meetings', { params });
   }
 
   createMeeting(request: CreateMeetingRequest) {
     return this.http.post<Meeting>(environment.apiUrl + '/meetings', request);
   }
 
-  acceptInvitation(meetingId: number) {
+  joinMeeting(meetingId: number) {
     return this.http.put<void>(environment.apiUrl + '/meetings/' + meetingId + '/join', {});
-  }
-
-  declineInvitation(meetingId: number) {
-    return this.http.delete<void>(environment.apiUrl + '/meetings/' + meetingId + '/invitation');
   }
 
   leaveMeeting(meetingId: number) {

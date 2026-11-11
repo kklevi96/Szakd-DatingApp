@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+
+.meetings-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 24px;
+}
+
+.meetings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+  padding: 20px 0 4px;
+}
+
+.invitations-section,
+.past-meetings-section {
+  margin-top: 24px;
+}
+
+.my-meetings-section {
+  margin-top: 36px;
+}
+
+.empty-message {
+  color: var(--mat-sys-on-surface-variant);
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.error-message {
+  color: var(--mat-sys-error);
+}
+
+@media (max-width: 640px) {
+  .meetings-page {
+    padding: 24px 12px;
+  }
+
+  .meetings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -496,37 +496,6 @@ namespace DatingApp.Data.Migrations
                     b.ToTable("MeetingAttendances");
                 });
 
-            modelBuilder.Entity("DatingApp.Models.MeetingInvitation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MeetingId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("MeetingId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("MeetingInvitations");
-                });
-
             modelBuilder.Entity("DatingApp.Models.Message", b =>
                 {
                     b.Property<int>("Id")
@@ -807,25 +776,6 @@ namespace DatingApp.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DatingApp.Models.MeetingInvitation", b =>
-                {
-                    b.HasOne("DatingApp.Models.Meeting", "Meeting")
-                        .WithMany("MeetingInvitations")
-                        .HasForeignKey("MeetingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DatingApp.Models.DatingappUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Meeting");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("DatingApp.Models.Message", b =>
                 {
                     b.HasOne("DatingApp.Models.Conversation", "Conversation")
@@ -933,8 +883,6 @@ namespace DatingApp.Data.Migrations
             modelBuilder.Entity("DatingApp.Models.Meeting", b =>
                 {
                     b.Navigation("MeetingAttendances");
-
-                    b.Navigation("MeetingInvitations");
                 });
 #pragma warning restore 612, 618
         }

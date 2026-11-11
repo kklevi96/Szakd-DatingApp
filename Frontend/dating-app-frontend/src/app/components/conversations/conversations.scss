@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 :host {
   display: block;
   height: 100%;
@@ -55,6 +57,24 @@ button.conversation-row.selected {
 
 .conversation-name {
   font-weight: 600;
+}
+
+.conversation-name-label {
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 44px);
+  line-height: 24px;
+  vertical-align: middle;
+
+  @include mat.badge-overrides((
+    container-offset: -20px 6px,
+  ));
+}
+
+.conversation-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .conversation-layout {

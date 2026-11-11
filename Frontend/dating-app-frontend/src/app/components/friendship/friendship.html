@@ -39,7 +39,7 @@
     <p role="alert">{{ conversationError() }}</p>
   }
 
-  @if (!wantsFriendship()) {
+  @if (user() && !wantsFriendship()) {
     <div class="paused-panel">
       <mat-icon>pause_circle</mat-icon>
       <h2>Looking for friends is paused</h2>
@@ -48,10 +48,11 @@
     </div>
   }
 
-  @if (wantsFriendship() && !isSaving()) {
-    @if (isLoadingUsers() && !hasLoadedUsers()) {
-      <p>Loading..</p>
-    } @else if (!errorMessage()) {
+  @if (isLoadingUsers() && !hasLoadedUsers()) {
+    <p>Loading..</p>
+  }
+  @else if (wantsFriendship() && !isSaving()) {
+     @if (!errorMessage()) {
       <p class="results-count">
         {{ users().length }}
         {{ users().length === 1 ? 'person wants' : 'people want' }}

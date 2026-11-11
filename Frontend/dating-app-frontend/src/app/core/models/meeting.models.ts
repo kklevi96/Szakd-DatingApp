@@ -10,8 +10,6 @@ export class Meeting {
   createdAt = '';
   userIds: string[] = [];
   users: User[] = [];
-  invitedUserIds: string[] = [];
-  invitedUsers: User[] = [];
 }
 
 export class CreateMeetingRequest {
@@ -26,3 +24,4 @@ export interface MeetingDialogData {
   otherUserIds?: string[];
   recipientNames?: string[];
 }
+

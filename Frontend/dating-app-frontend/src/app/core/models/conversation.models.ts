@@ -7,6 +7,7 @@ export class Conversation {
   name: string | null = null;
   memberUserIds: string[] = [];
   members: User[] = [];
+  unreadMessageCount = 0;
 }
 
 export class CreateConversationRequest {

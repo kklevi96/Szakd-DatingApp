@@ -4,6 +4,7 @@ import { Conversation, ConversationNameChange } from '../../core/models/conversa
 import { ConversationService } from '../../core/services/conversation-service';
 import { Messages } from './messages/messages';
 import { MatListModule } from '@angular/material/list';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth-service';
@@ -13,7 +14,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Invitations } from '../invitations/invitations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatInputModule } from '@angular/material/input';
-import { finalize, Subscription } from 'rxjs';
+import { finalize, merge, Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SignalRService } from '../../core/services/signalr.service';
 
@@ -22,6 +23,7 @@ import { SignalRService } from '../../core/services/signalr.service';
   imports: [
     MatInputModule,
     MatListModule,
+    MatBadgeModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
@@ -73,7 +75,10 @@ export class Conversations implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.selectConversationFromUrl());
 
-    this.signalRService.conversationsChanged$
+    merge(
+      this.signalRService.conversationsChanged$,
+      this.conversationService.readStateChanged$,
+    )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         if (this.auth.getToken()) {

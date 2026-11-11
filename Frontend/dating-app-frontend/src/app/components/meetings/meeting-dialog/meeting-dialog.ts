@@ -38,7 +38,9 @@ export class MeetingDialog implements OnInit {
     private destroyRef: DestroyRef,
   ) {}
 
-  ngOnInit(): void { this.loadLocations(); }
+  ngOnInit(): void {
+    this.loadLocations();
+  }
 
   loadLocations(): void {
     this.isLoading.set(true);

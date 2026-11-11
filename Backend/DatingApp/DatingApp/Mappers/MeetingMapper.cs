@@ -23,12 +23,6 @@ namespace DatingApp.Mappers
                 Users = meeting.MeetingAttendances
                     .Select(ma => UserMapper.ToResponse(ma.User))
                     .ToList(),
-                InvitedUserIds = meeting.MeetingInvitations
-                    .Select(invitation => invitation.UserId)
-                    .ToList(),
-                InvitedUsers = meeting.MeetingInvitations
-                    .Select(invitation => UserMapper.ToResponse(invitation.User))
-                    .ToList(),
             };
         }
     }

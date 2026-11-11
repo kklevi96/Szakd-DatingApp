@@ -27,8 +27,6 @@ namespace DatingApp.Services
 
         public async Task<MeetingResponse> CreateMeetingAsync(string currentUserId, CreateMeetingRequest request)
         {
-            var otherUserIds = await GetInvitedUserIdsAsync(currentUserId, request);
-
             var locationExists = await _context.Locations
                 .AnyAsync(l => l.Id == request.LocationId);
 
@@ -39,22 +37,7 @@ namespace DatingApp.Services
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            int conversationId;
-
-            if (request.ConversationId.HasValue)
-                conversationId = request.ConversationId.Value;
-            else
-            {
-                var conversation = await _conversationService.CreateConversationAsync(
-                    currentUserId,
-                    new CreateConversationRequest
-                    {
-                        IsGroup = otherUserIds.Count > 1,
-                        OtherUserIds = otherUserIds
-                    });
-
-                conversationId = conversation.Id;
-            }
+            var conversationId = await GetConversationIdAsync(currentUserId, request);
 
             var meeting = new Meeting
             {
@@ -72,15 +55,6 @@ namespace DatingApp.Services
 
             _context.Meetings.Add(meeting);
 
-            foreach (var userId in otherUserIds)
-            {
-                _context.MeetingInvitations.Add(new MeetingInvitation
-                {
-                    Meeting = meeting,
-                    UserId = userId
-                });
-            }
-
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -95,46 +69,25 @@ namespace DatingApp.Services
         public async Task<MeetingResponse?> GetMeetingByIdAsync(int id, string currentUserId)
         {
             var meeting = await MeetingQuery()
-                .Where(meeting => meeting.MeetingAttendances.Any() &&
-                    _context.ConversationMembers.Any(member =>
-                        member.ConversationId == meeting.ConversationId && member.UserId == currentUserId))
+                .Where(meeting => _context.ConversationMembers.Any(member =>
+                    member.ConversationId == meeting.ConversationId && member.UserId == currentUserId))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             return meeting == null ? null : MeetingMapper.ToResponse(meeting);
         }
 
-        public async Task<List<MeetingResponse>> GetMyMeetingsAsync(string currentUserId)
+        public async Task<List<MeetingResponse>> GetMeetingsAsync(string currentUserId, int? conversationId = null)
         {
-            var meetings = await MeetingQuery()
-                .Where(m => m.MeetingAttendances.Any(ma => ma.UserId == currentUserId))
-                .OrderBy(m => m.MeetingDate)
-                .ToListAsync();
+            var query = MeetingQuery()
+                .Where(meeting => _context.ConversationMembers.Any(member =>
+                    member.ConversationId == meeting.ConversationId && member.UserId == currentUserId));
 
-            return meetings.Select(MeetingMapper.ToResponse).ToList();
-        }
-
-        public async Task<List<MeetingResponse>> GetMeetingsByConversationAsync(int conversationId, string currentUserId)
-        {
-            var conversation = await _context.Conversations
-                .Where(c => c.Id == conversationId)
-                .Select(c => new
-                {
-                    IsMember = c.ConversationMembers.Any(member => member.UserId == currentUserId)
-                })
-                .FirstOrDefaultAsync();
-
-            if (conversation == null)
+            if (conversationId.HasValue)
             {
-                throw new KeyNotFoundException("Conversation not found.");
+                query = query.Where(meeting => meeting.ConversationId == conversationId.Value);
             }
 
-            if (!conversation.IsMember)
-            {
-                throw new UnauthorizedAccessException("You are not a member of this conversation.");
-            }
-
-            var meetings = await MeetingQuery()
-                .Where(meeting => meeting.ConversationId == conversationId && meeting.MeetingAttendances.Any())
+            var meetings = await query
                 .OrderBy(meeting => meeting.MeetingDate)
                 .ThenBy(meeting => meeting.Id)
                 .ToListAsync();
@@ -142,108 +95,37 @@ namespace DatingApp.Services
             return meetings.Select(MeetingMapper.ToResponse).ToList();
         }
 
-        public async Task<List<MeetingResponse>> GetMyInvitationsAsync(string currentUserId)
-        {
-            var meetings = await MeetingQuery()
-                .Where(meeting => _context.MeetingInvitations.Any(invitation =>
-                    invitation.MeetingId == meeting.Id && invitation.UserId == currentUserId))
-                .OrderBy(meeting => meeting.MeetingDate)
-                .ToListAsync();
-
-            return meetings.Select(MeetingMapper.ToResponse).ToList();
-        }
-
         public async Task<bool> JoinMeetingAsync(int meetingId, string currentUserId)
         {
-            var conversationId = await _context.Meetings
-                .Where(meeting => meeting.Id == meetingId && meeting.MeetingAttendances.Any())
-                .Select(meeting => (int?)meeting.ConversationId)
-                .FirstOrDefaultAsync();
+            var meeting = await _context.Meetings
+                .Include(m => m.MeetingAttendances)
+                .FirstOrDefaultAsync(m => m.Id == meetingId);
 
-            if (!conversationId.HasValue)
+            if (meeting == null)
             {
                 return false;
             }
 
             var isConversationMember = await _context.ConversationMembers.AnyAsync(member =>
-                member.ConversationId == conversationId.Value && member.UserId == currentUserId);
+                member.ConversationId == meeting.ConversationId && member.UserId == currentUserId);
 
             if (!isConversationMember)
                 throw new UnauthorizedAccessException("You are not a member of this conversation.");
 
-            var alreadyJoined = await _context.MeetingAttendances
-                .AnyAsync(attendance =>
-                    attendance.MeetingId == meetingId &&
-                    attendance.UserId == currentUserId);
+            var alreadyJoined = meeting.MeetingAttendances.Any(attendance => attendance.UserId == currentUserId);
 
             if (alreadyJoined)
             {
                 return true;
             }
 
-            var invitation = await _context.MeetingInvitations
-                .SingleOrDefaultAsync(invitation =>
-                    invitation.MeetingId == meetingId &&
-                    invitation.UserId == currentUserId);
-
-            var newAttendance = new MeetingAttendance
+            meeting.MeetingAttendances.Add(new MeetingAttendance
             {
-                MeetingId = meetingId,
                 UserId = currentUserId
-            };
+            });
 
-            _context.MeetingAttendances.Add(newAttendance);
-            if (invitation != null)
-                _context.MeetingInvitations.Remove(invitation);
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                _context.Entry(newAttendance).State = EntityState.Detached;
-                if (invitation != null)
-                    _context.Entry(invitation).State = EntityState.Detached;
-
-                var joinedMeanwhile = await _context.MeetingAttendances
-                    .AnyAsync(existingAttendance =>
-                        existingAttendance.MeetingId == meetingId &&
-                        existingAttendance.UserId == currentUserId);
-
-                if (joinedMeanwhile)
-                {
-                    return true;
-                }
-
-                var meetingStillExists = await _context.Meetings
-                    .AnyAsync(meeting => meeting.Id == meetingId);
-
-                if (!meetingStillExists)
-                {
-                    return false;
-                }
-
-                throw;
-            }
-
-            await NotifyMeetingsChangedAsync(conversationId.Value);
-            return true;
-        }
-
-        public async Task<bool> DeclineInvitationAsync(int meetingId, string currentUserId)
-        {
-            var invitation = await _context.MeetingInvitations
-                .Include(invitation => invitation.Meeting)
-                .SingleOrDefaultAsync(invitation => invitation.MeetingId == meetingId && invitation.UserId == currentUserId);
-
-            if (invitation == null)
-                return false;
-
-            var conversationId = invitation.Meeting.ConversationId;
-            _context.MeetingInvitations.Remove(invitation);
             await _context.SaveChangesAsync();
-            await NotifyMeetingsChangedAsync(conversationId);
+            await NotifyMeetingsChangedAsync(meeting.ConversationId);
             return true;
         }
 
@@ -307,7 +189,7 @@ namespace DatingApp.Services
             return true;
         }
 
-        private async Task<List<string>> GetInvitedUserIdsAsync(
+        private async Task<int> GetConversationIdAsync(
             string currentUserId,
             CreateMeetingRequest request)
         {
@@ -331,17 +213,12 @@ namespace DatingApp.Services
                         "You are not a member of this conversation.");
                 }
 
-                var memberIds = conversation.ConversationMembers
-                    .Where(member => member.UserId != currentUserId)
-                    .Select(member => member.UserId)
-                    .ToList();
-
-                if (memberIds.Count == 0)
+                if (conversation.ConversationMembers.Count < 2)
                 {
                     throw new ArgumentException("There is nobody to invite.");
                 }
 
-                return memberIds;
+                return conversation.Id;
             }
 
             if (request.OtherUserIds == null ||
@@ -351,16 +228,16 @@ namespace DatingApp.Services
                 throw new ArgumentException("Please select valid users.");
             }
 
-            var otherUserIds = request.OtherUserIds
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
+            var otherUserIds = request.OtherUserIds.Distinct().ToList();
+            var newConversation = await _conversationService.CreateConversationAsync(
+                currentUserId,
+                new CreateConversationRequest
+                {
+                    IsGroup = otherUserIds.Count > 1,
+                    OtherUserIds = otherUserIds
+                });
 
-            if (otherUserIds.Contains(currentUserId))
-            {
-                throw new ArgumentException("You cannot invite yourself.");
-            }
-
-            return otherUserIds;
+            return newConversation.Id;
         }
 
         private async Task NotifyMeetingsChangedAsync(int conversationId)
@@ -386,10 +263,6 @@ namespace DatingApp.Services
                 .Include(m => m.Location)
                 .Include(m => m.MeetingAttendances)
                 .ThenInclude(ma => ma.User)
-                .ThenInclude(user => user.HobbyUsers)
-                .ThenInclude(hu => hu.Hobby)
-                .Include(meeting => meeting.MeetingInvitations)
-                .ThenInclude(invitation => invitation.User)
                 .ThenInclude(user => user.HobbyUsers)
                 .ThenInclude(hu => hu.Hobby);
         }

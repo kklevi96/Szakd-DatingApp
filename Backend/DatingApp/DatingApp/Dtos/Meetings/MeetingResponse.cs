@@ -13,7 +13,5 @@ namespace DatingApp.Dtos.Meetings
         public DateTime CreatedAt { get; set; }
         public List<string> UserIds { get; set; } = new();
         public List<UserResponse> Users { get; set; } = new();
-        public List<string> InvitedUserIds { get; set; } = new();
-        public List<UserResponse> InvitedUsers { get; set; } = new();
     }
 }

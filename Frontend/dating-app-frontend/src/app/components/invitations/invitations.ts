@@ -1,9 +1,6 @@
 import { Component, DestroyRef, Input, OnChanges, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { finalize, Subscription } from 'rxjs';
@@ -12,10 +9,11 @@ import { MeetingService } from '../../core/services/meeting-service';
 import { AuthService } from '../../core/services/auth-service';
 import { SignalRService } from '../../core/services/signalr.service';
 import { MeetingDialog } from '../meetings/meeting-dialog/meeting-dialog';
+import { MeetingCard } from '../meetings/meeting-card/meeting-card';
 
 @Component({
   selector: 'app-invitations',
-  imports: [DatePipe, MatButtonModule, MatCardModule, MatChipsModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, MeetingCard],
   templateUrl: './invitations.html',
   styleUrl: './invitations.scss',
 })
@@ -25,8 +23,6 @@ export class Invitations implements OnInit, OnChanges {
   meetings = signal<Meeting[]>([]);
   isLoading = signal(false);
   errorMessage = signal('');
-  actionError = signal('');
-  pendingIds = signal(new Set<number>());
   private meetingsRequest?: Subscription;
 
   constructor(
@@ -48,7 +44,6 @@ export class Invitations implements OnInit, OnChanges {
 
   ngOnChanges(): void {
     this.meetings.set([]);
-    this.actionError.set('');
     this.loadMeetings();
   }
 
@@ -60,7 +55,7 @@ export class Invitations implements OnInit, OnChanges {
     if (!token) { return; }
     this.isLoading.set(true);
     this.errorMessage.set('');
-    this.meetingsRequest = this.meetingService.getByConversation(conversationId).pipe(
+    this.meetingsRequest = this.meetingService.getMeetings(conversationId).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.isLoading.set(false)),
     ).subscribe({
@@ -71,20 +66,10 @@ export class Invitations implements OnInit, OnChanges {
       },
       error: () => {
         if (this.conversationId === conversationId && this.auth.getToken() === token) {
-          this.errorMessage.set('Invitations could not be loaded.');
+          this.errorMessage.set('Meetings could not be loaded.');
         }
       },
     });
-  }
-
-  isInvited(meeting: Meeting): boolean {
-    const id = this.auth.currentUser()?.id;
-    return !!id && meeting.invitedUserIds.includes(id);
-  }
-
-  isAttending(meeting: Meeting): boolean {
-    const id = this.auth.currentUser()?.id;
-    return !!id && meeting.userIds.includes(id);
   }
 
   createMeeting(): void {
@@ -100,31 +85,4 @@ export class Invitations implements OnInit, OnChanges {
     });
   }
 
-  respond(meeting: Meeting, action: 'accept' | 'decline' | 'leave' | 'join'): void {
-    if (this.pendingIds().has(meeting.id)) { return; }
-    if (action === 'leave' && !this.isAttending(meeting)) { return; }
-    if ((action === 'accept' || action === 'decline') && !this.isInvited(meeting)) { return; }
-    if (action === 'join' && (this.isAttending(meeting) || this.isInvited(meeting))) { return; }
-    const token = this.auth.getToken();
-    const conversationId = this.conversationId;
-    if (!token) { return; }
-    this.actionError.set('');
-    this.pendingIds.update(ids => new Set(ids).add(meeting.id));
-    const request = action === 'accept' || action === 'join' ? this.meetingService.acceptInvitation(meeting.id) :
-      action === 'decline' ? this.meetingService.declineInvitation(meeting.id) : this.meetingService.leaveMeeting(meeting.id);
-    request.pipe(
-      takeUntilDestroyed(this.destroyRef),
-      finalize(() => this.pendingIds.update(ids => { const next = new Set(ids); next.delete(meeting.id); return next; })),
-    ).subscribe({
-      next: () => {
-        if (this.conversationId === conversationId && this.auth.getToken() === token) { this.loadMeetings(); }
-      },
-      error: () => {
-        if (this.conversationId === conversationId && this.auth.getToken() === token) {
-          this.actionError.set('Your response could not be saved. Please try again.');
-          this.loadMeetings();
-        }
-      },
-    });
-  }
 }

@@ -38,8 +38,15 @@
           </span>
 
             <span matListItemTitle class="conversation-name">
-            {{ getConversationName(conversation) }}
-          </span>
+              <span class="conversation-name-label"
+                [matBadge]="conversation.unreadMessageCount"
+                [matBadgeHidden]="!conversation.unreadMessageCount"
+                matBadgePosition="after"
+                [matBadgeOverlap]="false"
+                [matBadgeDescription]="conversation.unreadMessageCount + ' unread messages'">
+                <span class="conversation-name-text">{{ getConversationName(conversation) }}</span>
+              </span>
+            </span>
 
             <span matListItemLine>
             @if (conversation.isGroup) {
@@ -169,7 +176,10 @@
             <p class="name-error" role="alert">{{ nameError() }}</p>
           }
 
-          <app-messages [conversationId]="conversation.id"></app-messages>
+          <app-messages
+            [conversationId]="conversation.id"
+            [isActive]="!isMobile() || !showInvitations()">
+          </app-messages>
         </mat-drawer-content>
       </mat-drawer-container>
     } @else {

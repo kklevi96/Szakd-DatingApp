@@ -11,7 +11,14 @@
 
   <a routerLink="/conversations" routerLinkActive="active-link"
      ariaCurrentWhenActive="page" aria-label="Conversations" title="Conversations">
-    <mat-icon>chat_bubble_outline</mat-icon>
+    <mat-icon
+      aria-hidden="false"
+      aria-label="Conversations"
+      [matBadge]="unreadConversationCount()"
+      [matBadgeHidden]="unreadConversationCount() === 0"
+      [matBadgeDescription]="unreadConversationCount() + ' conversations with unread messages'">
+      chat_bubble_outline
+    </mat-icon>
   </a>
 
   <a routerLink="/meetings" routerLinkActive="active-link"
