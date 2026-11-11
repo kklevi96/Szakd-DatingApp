@@ -4,7 +4,6 @@ using DatingApp.Dtos.Users;
 using DatingApp.Mappers;
 using DatingApp.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace DatingApp.Services
 {
@@ -15,6 +14,8 @@ namespace DatingApp.Services
         //backend hívja a chatgpt api-t
 
         //vagy algoritmikus megoldás, vagy akár egymást is erősíthetik/validálhatják
+
+        private const int MaxMbtiDifference = 3;
 
         private readonly DatingAppDbContext _context;
         private readonly IUserService _userService;
@@ -39,32 +40,14 @@ namespace DatingApp.Services
             var currentUser = await _userService.GetByIdAsync(currentUserId);
             var otherUser = await _userService.GetByIdAsync(otherUserId);
 
-            if (!currentUser.WantsRelationship || !otherUser.WantsRelationship)
-            {
-                return new CompatibilityCheckResponse
-                {
-                    IsCompatible = false,
-                    Reason = "Both users must be looking for a relationship.",
-                    OtherUser = UserMapper.ToResponse(otherUser)
-                };
-            }
+            var incompatibilityReason = GetIncompatibilityReason(currentUser, otherUser);
 
-            if (!AreMutuallyInterested(currentUser, otherUser))
+            if (incompatibilityReason != null)
             {
                 return new CompatibilityCheckResponse
                 {
                     IsCompatible = false,
-                    Reason = "Gender preferences are not mutual.",
-                    OtherUser = UserMapper.ToResponse(otherUser)
-                };
-            }
-
-            if (Math.Abs((long)currentUser.MBTICode - otherUser.MBTICode) > 3)
-            {
-                return new CompatibilityCheckResponse
-                {
-                    IsCompatible = false,
-                    Reason = "MBTI code difference exceeds 3.",
+                    Reason = incompatibilityReason,
                     OtherUser = UserMapper.ToResponse(otherUser)
                 };
             }
@@ -114,7 +97,6 @@ namespace DatingApp.Services
         public async Task<List<CompatibilityResponse>> GetMyCompatibilitiesAsync(string currentUserId)
         {
             var compatibilities = await _context.Compatibilities
-                .AsSplitQuery()
                 .Include(c => c.UserA).ThenInclude(user => user.HobbyUsers).ThenInclude(hu => hu.Hobby)
                 .Include(c => c.UserB).ThenInclude(user => user.HobbyUsers).ThenInclude(hu => hu.Hobby)
                 .Where(c => c.UserId_A == currentUserId || c.UserId_B == currentUserId)
@@ -122,9 +104,7 @@ namespace DatingApp.Services
                 .ToListAsync();
 
             return compatibilities
-                .Where(c => c.UserA.WantsRelationship && c.UserB.WantsRelationship &&
-                            Math.Abs((long)c.UserA.MBTICode - c.UserB.MBTICode) <= 3 &&
-                            AreMutuallyInterested(c.UserA, c.UserB))
+                .Where(c => GetIncompatibilityReason(c.UserA, c.UserB) == null)
                 .Select(CompatibilityMapper.ToResponse)
                 .ToList();
         }
@@ -145,24 +125,21 @@ namespace DatingApp.Services
                 .Select(c => new { c.UserId_A, c.UserId_B })
                 .ToListAsync();
 
-            var existingSet = new HashSet<string>(
-                existingPairs.Select(p => $"{p.UserId_A}|{p.UserId_B}")
-            );
+            var existingSet = existingPairs
+                .Select(p => (p.UserId_A, p.UserId_B))
+                .ToList();
 
             var newCompatibilities = new List<Compatibility>();
 
             foreach (var otherUser in otherUsers)
             {
-                if (Math.Abs((long)currentUser.MBTICode - otherUser.MBTICode) > 3 ||
-                    !AreMutuallyInterested(currentUser, otherUser))
+                if (GetIncompatibilityReason(currentUser, otherUser) != null)
                 {
                     continue;
                 }
 
                 var (userAId, userBId) = NormalizeUserPair(currentUser.Id, otherUser.Id);
-                var pairKey = $"{userAId}|{userBId}";
-
-                if (existingSet.Contains(pairKey))
+                if (existingSet.Contains((userAId, userBId)))
                 {
                     continue;
                 }
@@ -174,7 +151,7 @@ namespace DatingApp.Services
                     CreatedAt = DateTime.UtcNow
                 });
 
-                existingSet.Add(pairKey);
+                existingSet.Add((userAId, userBId));
             }
 
             if (newCompatibilities.Count > 0)
@@ -203,6 +180,39 @@ namespace DatingApp.Services
             return users.Select(UserMapper.ToResponse).ToList();
         }
 
+        public async Task<bool> AreDatingCompatibleAsync(string currentUserId, string otherUserId)
+        {
+            var compatibility = await _context.Compatibilities
+                .Include(c => c.UserA)
+                .Include(c => c.UserB)
+                .FirstOrDefaultAsync(c =>
+                    (c.UserId_A == currentUserId && c.UserId_B == otherUserId) ||
+                    (c.UserId_A == otherUserId && c.UserId_B == currentUserId));
+
+            return compatibility != null &&
+                   GetIncompatibilityReason(compatibility.UserA, compatibility.UserB) == null;
+        }
+
+        private static string? GetIncompatibilityReason(DatingappUser user, DatingappUser otherUser)
+        {
+            if (!user.WantsRelationship || !otherUser.WantsRelationship)
+            {
+                return "Both users must be looking for a relationship.";
+            }
+
+            if (!AreMutuallyInterested(user, otherUser))
+            {
+                return "Gender preferences are not mutual.";
+            }
+
+            if (Math.Abs((long)user.MBTICode - otherUser.MBTICode) > MaxMbtiDifference)
+            {
+                return $"MBTI code difference exceeds {MaxMbtiDifference}.";
+            }
+
+            return null;
+        }
+
         private static bool AreMutuallyInterested(DatingappUser user, DatingappUser otherUser)
         {
             return IsInterestedIn(user, otherUser.Gender) &&
@@ -225,7 +235,5 @@ namespace DatingApp.Services
                 ? (userId1, userId2)
                 : (userId2, userId1);
         }
-
-
     }
 }

@@ -17,6 +17,7 @@ import { MeetingCard } from '../meetings/meeting-card/meeting-card';
   templateUrl: './invitations.html',
   styleUrl: './invitations.scss',
 })
+
 export class Invitations implements OnInit, OnChanges {
   @Input({ required: true }) conversationId = 0;
 
@@ -84,5 +85,4 @@ export class Invitations implements OnInit, OnChanges {
       }
     });
   }
-
 }

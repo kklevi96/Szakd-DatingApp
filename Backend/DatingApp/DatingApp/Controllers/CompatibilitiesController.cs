@@ -26,10 +26,7 @@ namespace DatingApp.Controllers
             var result = await _compatibilityService
                 .CheckOrCreateCompatibilityAsync(currentUserId, otherUserId);
 
-            if (result != null)
-                return Ok(result);
-
-            return BadRequest();
+            return Ok(result);
         }
 
         [HttpPost("my-dating")]
